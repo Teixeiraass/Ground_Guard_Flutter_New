@@ -1,0 +1,308 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ground_guard_app/core/routes/app_routes.dart';
+import 'package:ground_guard_app/core/theme/app_colors.dart';
+import '../providers/auth_provider.dart';
+import '../providers/auth_state.dart';
+
+class LoginPage extends ConsumerStatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  ConsumerState<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends ConsumerState<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _onLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preencha todos os campos')),
+      );
+      return;
+    }
+
+    await ref.read(authProvider.notifier).login(
+      email: email,
+      password: password,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final authState = ref.watch(authProvider);
+
+    // Escuta mudanças no estado para navegar ou mostrar erro
+    ref.listen(authProvider, (previous, next) {
+      if (next.status == AuthStatus.authenticated) {
+        Navigator.pushReplacementNamed(context, AppRoutes.main);
+      } else if (next.errorMessage != null && next.status == AuthStatus.unauthenticated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.errorMessage!)),
+        );
+      }
+    });
+
+    return Scaffold(
+      body: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              spacing: 42,
+              children: [
+                Column(
+                  spacing: 28,
+                  children: [
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 120,
+                    ),
+                    Text(
+                      'Cuidando do seu jardim com\ninteligência e carinho.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF424840),
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // CARD LOGIN
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F4EF),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 18,
+                        offset: const Offset(4, 8),
+                      ),
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.9),
+                        blurRadius: 12,
+                        offset: const Offset(-4, -4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // EMAIL
+                      Text(
+                        'Email',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700, color: const Color(0xFF424840)),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          hintText: 'nome@exemplo.com',
+                          prefixIcon: const Icon(
+                            Icons.mail_outline_rounded,
+                            color: AppColors.outline,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 18,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // SENHA HEADER
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Senha',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w700, color: const Color(0xFF424840)),
+                          ),
+                          TextButton(
+                            onPressed: () {},
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              'Esqueceu a senha?',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          hintText: '••••••••',
+                          prefixIcon: const Icon(
+                            Icons.lock_outline_rounded,
+                            color: AppColors.outline,
+                          ),
+                          suffixIcon: const Icon(
+                            Icons.visibility_outlined,
+                            color: AppColors.outline,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 18,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // BOTAO ENTRAR
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton(
+                          onPressed: authState.status == AuthStatus.loading ? null : _onLogin,
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                          child: authState.status == AuthStatus.loading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Entrar',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Icon(Icons.arrow_forward_rounded),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // CREATE ACCOUNT
+                Column(
+                  children: [
+                    Text(
+                      'Não tem uma conta ainda?',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF424840),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.register);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: const Color(0xFF173518),
+                          side: BorderSide(
+                            color: const Color(0xFF173518).withOpacity(0.25),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                        child: const Text(
+                          'Criar conta',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // FOOTER ICONS
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.eco_rounded,
+                        size: 18,
+                        color: Colors.green.shade300,
+                      ),
+                      const SizedBox(width: 12),
+                      Icon(
+                        Icons.water_drop_rounded,
+                        size: 18,
+                        color: Colors.lightBlue.shade300,
+                      ),
+                      const SizedBox(width: 12),
+                      Icon(
+                        Icons.spa_rounded,
+                        size: 18,
+                        color: Colors.amber.shade400,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
