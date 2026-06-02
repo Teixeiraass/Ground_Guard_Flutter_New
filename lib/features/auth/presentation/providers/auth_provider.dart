@@ -30,12 +30,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> checkAuth() async {
     final token = await SecureStorageService.getAccessToken();
-    if (token == null) {
+    final user = await SecureStorageService.getUser();
+
+    if (token == null || user == null) {
       state = state.copyWith(status: AuthStatus.unauthenticated);
       return;
     }
 
-    state = state.copyWith(status: AuthStatus.authenticated);
+    state = state.copyWith(status: AuthStatus.loading, user: user);
+
+    try {
+      final hasDevices = await _repository.hasDevices();
+      state = state.copyWith(
+        status: hasDevices ? AuthStatus.authenticated : AuthStatus.authenticatedNoDevices,
+        user: user,
+      );
+    } catch (e) {
+      // Se falhar a checagem de devices, deixamos logado por segurança
+      state = state.copyWith(status: AuthStatus.authenticated, user: user);
+    }
   }
 
   Future<void> login({
@@ -46,21 +59,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       final response = await _repository.login(email, password);
-      
+      final hasDevices = await _repository.hasDevices();
+
       state = state.copyWith(
-        status: AuthStatus.authenticated,
+        status: hasDevices ? AuthStatus.authenticated : AuthStatus.authenticatedNoDevices,
         user: response.user,
       );
-    } on DioException catch (e) {
-      final message = e.response?.data?['error'] ?? 'Falha no login. Verifique suas credenciais.';
+    } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
-        errorMessage: message,
-      );
-    } catch (e, stack) {
-      state = state.copyWith(
-        status: AuthStatus.unauthenticated,
-        errorMessage: 'Erro inesperado. Tente novamente.',
+        errorMessage: e.toString(),
       );
     }
   }
@@ -84,8 +92,35 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
-        errorMessage: 'Falha no registro. Tente novamente.',
+        errorMessage: e.toString(),
       );
+    }
+  }
+
+  Future<void> linkDevice(String deviceId) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    try {
+      await _repository.linkDevice(deviceId);
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.authenticatedNoDevices,
+        errorMessage: e.toString(),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> updateDeviceName(String deviceId, String name) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    try {
+      await _repository.updateDeviceName(deviceId, name);
+      state = state.copyWith(status: AuthStatus.authenticated);
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.authenticatedNoDevices,
+        errorMessage: e.toString(),
+      );
+      rethrow;
     }
   }
 

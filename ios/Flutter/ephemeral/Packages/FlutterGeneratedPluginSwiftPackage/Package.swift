@@ -1,7 +1,7 @@
 // swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 //
-//  Generated file. Do not edit.
+// Generated file. Do not edit.
 //
 
 import PackageDescription
@@ -15,7 +15,7 @@ let package = Package(
         .library(name: "FlutterGeneratedPluginSwiftPackage", type: .static, targets: ["FlutterGeneratedPluginSwiftPackage"])
     ],
     dependencies: [
-        .package(name: "flutter_native_splash", path: "../.packages/flutter_native_splash"),
+        .package(name: "flutter_native_splash", path: "../.packages/flutter_native_splash-2.4.7"),
         .package(name: "FlutterFramework", path: "../.packages/FlutterFramework")
     ],
     targets: [

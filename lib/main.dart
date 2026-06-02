@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ground_guard_app/core/routes/app_pages.dart';
 import 'package:ground_guard_app/core/routes/app_routes.dart';
 import 'package:ground_guard_app/core/theme/app_theme.dart';
+import 'package:ground_guard_app/features/auth/presentation/providers/auth_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,17 +14,20 @@ void main() {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Escuta o status de autenticação globalmente
+    final authStatus = ref.watch(authProvider.select((state) => state.status));
+
     return MaterialApp(
       title: 'Ground Guard',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       initialRoute: AppRoutes.splash,
-      onGenerateRoute: AppPages.generateRoute,
+      onGenerateRoute: (settings) => AppPages.generateRoute(settings, authStatus),
     );
   }
 }

@@ -35,9 +35,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
 
     await ref.read(authProvider.notifier).login(
-      email: email,
-      password: password,
-    );
+          email: email,
+          password: password,
+        );
   }
 
   @override
@@ -45,10 +45,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
 
-    // Escuta mudanças no estado para navegar ou mostrar erro
+    // ESCUTA MUDANÇAS NO ESTADO PARA NAVEGAR
     ref.listen(authProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
         Navigator.pushReplacementNamed(context, AppRoutes.main);
+      } else if (next.status == AuthStatus.authenticatedNoDevices) {
+        // TRAVA: SE NÃO TEM DEVICE, VAI DIRETO PRO QR CODE
+        Navigator.pushReplacementNamed(context, AppRoutes.qrCodeDevice);
       } else if (next.errorMessage != null && next.status == AuthStatus.unauthenticated) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.errorMessage!)),
@@ -135,7 +138,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                       const SizedBox(height: 20),
 
-                      // SENHA HEADER
+                      // SENHA
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -234,7 +237,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                 ),
 
-                // CREATE ACCOUNT
+                // CRIAR CONTA
                 Column(
                   children: [
                     Text(
@@ -270,33 +273,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                     ),
                   ],
-                ),
-
-                // FOOTER ICONS
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.eco_rounded,
-                        size: 18,
-                        color: Colors.green.shade300,
-                      ),
-                      const SizedBox(width: 12),
-                      Icon(
-                        Icons.water_drop_rounded,
-                        size: 18,
-                        color: Colors.lightBlue.shade300,
-                      ),
-                      const SizedBox(width: 12),
-                      Icon(
-                        Icons.spa_rounded,
-                        size: 18,
-                        color: Colors.amber.shade400,
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),

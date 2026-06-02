@@ -129,6 +129,9 @@ class ProfilePage extends ConsumerWidget {
                     menuItem(
                       icon: Icons.wifi_tethering_rounded,
                       title: 'Meus Dispositivos IoT',
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.devicesList);
+                      },
                     ),
                     menuItem(
                       icon: Icons.water_drop_outlined,
@@ -304,45 +307,52 @@ class ProfilePage extends ConsumerWidget {
   Widget menuItem({
     required IconData icon,
     required String title,
+    VoidCallback? onTap,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 18,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF4EA),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF274029),
-            ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 18,
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF4EA),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: const Color(0xFF274029),
+                ),
               ),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.grey.shade400,
+              ),
+            ],
           ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.grey.shade400,
-          ),
-        ],
+        ),
       ),
     );
   }

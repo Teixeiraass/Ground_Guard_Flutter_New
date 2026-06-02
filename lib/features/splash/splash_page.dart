@@ -24,6 +24,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   }
 
   Future<void> _start() async {
+    // 1. Inicialização visual
     await AppInitializer.initialize((value, text) {
       if (mounted) {
         setState(() {
@@ -35,10 +36,16 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
     if (!mounted) return;
 
+    // 2. Garante que o AuthProvider terminou de checar o token e dispositivos
+    await ref.read(authProvider.notifier).checkAuth();
+
     final authStatus = ref.read(authProvider).status;
 
+    // 3. Decisão de rota final
     if (authStatus == AuthStatus.authenticated) {
       Navigator.pushReplacementNamed(context, AppRoutes.main);
+    } else if (authStatus == AuthStatus.authenticatedNoDevices) {
+      Navigator.pushReplacementNamed(context, AppRoutes.qrCodeDevice);
     } else {
       Navigator.pushReplacementNamed(context, AppRoutes.login);
     }

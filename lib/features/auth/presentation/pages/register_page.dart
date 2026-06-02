@@ -56,6 +56,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     ref.listen(authProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
         Navigator.pushReplacementNamed(context, AppRoutes.main);
+      } else if (next.status == AuthStatus.authenticatedNoDevices) {
+        // Redireciona para o QR Code se não houver dispositivos após registro
+        Navigator.pushReplacementNamed(context, AppRoutes.qrCodeDevice);
       } else if (next.errorMessage != null && next.status == AuthStatus.unauthenticated) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.errorMessage!)),
