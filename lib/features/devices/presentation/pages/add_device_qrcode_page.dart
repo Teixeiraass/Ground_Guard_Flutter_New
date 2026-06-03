@@ -40,7 +40,6 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
 
     try {
       await ref.read(authProvider.notifier).linkDevice(deviceId);
-      
       if (mounted) {
         _showDeviceNameModal(deviceId);
       }
@@ -58,7 +57,6 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
   Future<void> _handleDeviceNaming(String deviceId, String name) async {
     try {
       await ref.read(authProvider.notifier).updateDeviceName(deviceId, name);
-      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Dispositivo configurado com sucesso!')),
@@ -67,7 +65,6 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isProcessing = false);
         final errorMessage = ref.read(authProvider).errorMessage ?? 'Erro ao definir nome.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage)),
@@ -80,7 +77,7 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      isDismissible: false, // Força o usuário a dar um nome
+      isDismissible: false,
       enableDrag: false,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
@@ -122,7 +119,7 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
               onPressed: () {
                 final name = _deviceNameController.text.trim();
                 if (name.isNotEmpty) {
-                  Navigator.pop(context); // Fecha o modal
+                  Navigator.pop(context);
                   _handleDeviceNaming(deviceId, name);
                 }
               },
@@ -217,7 +214,7 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
         ),
         title: const Text('Adicionar Dispositivo', style: TextStyle(color: Color(0xFF173518), fontWeight: FontWeight.bold)),
         actions: [
-          ValueListenableBuilder(
+          ValueListenableBuilder<MobileScannerState>(
             valueListenable: cameraController,
             builder: (context, state, child) {
               return IconButton(
@@ -239,7 +236,9 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
               final barcodes = capture.barcodes;
               if (barcodes.isNotEmpty && !_isProcessing) {
                 final code = barcodes.first.rawValue;
-                if (code != null) _handleDeviceLink(code);
+                if (code != null) {
+                  _handleDeviceLink(code);
+                }
               }
             },
           ),
@@ -316,6 +315,44 @@ class ScannerOverlayPainter extends CustomPainter {
     final paint = Paint()..color = Colors.white.withOpacity(0.3)..style = PaintingStyle.stroke..strokeWidth = 2;
     canvas.drawRRect(RRect.fromRectAndRadius(cutoutRect, const Radius.circular(40)), paint);
 
+    final cornerPaint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 6;
+    const cornerLength = 45.0;
+
+    // Top Left
+    canvas.drawPath(
+      Path()
+        ..moveTo(cutoutRect.left, cutoutRect.top + cornerLength)
+        ..lineTo(cutoutRect.left, cutoutRect.top)
+        ..lineTo(cutoutRect.left + cornerLength, cutoutRect.top),
+      cornerPaint,
+    );
+
+    // Top Right
+    canvas.drawPath(
+      Path()
+        ..moveTo(cutoutRect.right - cornerLength, cutoutRect.top)
+        ..lineTo(cutoutRect.right, cutoutRect.top)
+        ..lineTo(cutoutRect.right, cutoutRect.top + cornerLength),
+      cornerPaint,
+    );
+
+    // Bottom Left
+    canvas.drawPath(
+      Path()
+        ..moveTo(cutoutRect.left, cutoutRect.bottom - cornerLength)
+        ..lineTo(cutoutRect.left, cutoutRect.bottom)
+        ..lineTo(cutoutRect.left + cornerLength, cutoutRect.bottom),
+      cornerPaint,
+    );
+
+    // Bottom Right
+    canvas.drawPath(
+      Path()
+        ..moveTo(cutoutRect.right - cornerLength, cutoutRect.bottom)
+        ..lineTo(cutoutRect.right, cutoutRect.bottom)
+        ..lineTo(cutoutRect.right, cutoutRect.bottom - cornerLength),
+      cornerPaint,
+    );
   }
 
   @override
