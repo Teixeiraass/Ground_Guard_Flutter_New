@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:ground_guard_app/core/routes/app_routes.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
+import '../providers/devices_provider.dart';
 
 class AddDeviceQrCodePage extends ConsumerStatefulWidget {
   const AddDeviceQrCodePage({super.key});
@@ -39,16 +39,15 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
     setState(() => _isProcessing = true);
 
     try {
-      await ref.read(authProvider.notifier).linkDevice(deviceId);
+      await ref.read(devicesProvider.notifier).linkDevice(deviceId);
       if (mounted) {
         _showDeviceNameModal(deviceId);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isProcessing = false);
-        final errorMessage = ref.read(authProvider).errorMessage ?? 'Erro ao vincular dispositivo.';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
+          SnackBar(content: Text('Erro ao vincular: ${e.toString()}')),
         );
       }
     }
@@ -56,7 +55,7 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
 
   Future<void> _handleDeviceNaming(String deviceId, String name) async {
     try {
-      await ref.read(authProvider.notifier).updateDeviceName(deviceId, name);
+      await ref.read(devicesProvider.notifier).updateName(deviceId, name);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Dispositivo configurado com sucesso!')),
@@ -65,9 +64,8 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
       }
     } catch (e) {
       if (mounted) {
-        final errorMessage = ref.read(authProvider).errorMessage ?? 'Erro ao definir nome.';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
+          SnackBar(content: Text('Erro ao definir nome: ${e.toString()}')),
         );
       }
     }

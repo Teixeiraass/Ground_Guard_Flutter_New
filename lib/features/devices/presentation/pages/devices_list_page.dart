@@ -35,7 +35,71 @@ class DevicesListPage extends ConsumerWidget {
                   itemCount: devices.length,
                   itemBuilder: (context, index) {
                     final device = devices[index];
-                    return _DeviceCard(device: device);
+                    return Dismissible(
+                      key: Key(device.uuid),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade400,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        alignment: Alignment.centerRight,
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Desvincular',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.delete_outline, color: Colors.white),
+                          ],
+                        ),
+                      ),
+                      confirmDismiss: (direction) async {
+                        return await _showDeleteConfirmation(context);
+                      },
+                      onDismissed: (direction) async {
+                        try {
+                          await ref.read(devicesProvider.notifier).unlinkDevice(device.uuid);
+                          
+                          final currentDevices = ref.read(devicesProvider).value ?? [];
+                          
+                          if (context.mounted) {
+                            if (currentDevices.isEmpty) {
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                AppRoutes.qrCodeDevice,
+                                (route) => false,
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('${device.name} desvinculado com sucesso'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Erro ao desvincular: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            ref.refresh(devicesProvider);
+                          }
+                        }
+                      },
+                      child: _DeviceCard(device: device),
+                    );
                   },
                 ),
         ),
@@ -69,6 +133,41 @@ class DevicesListPage extends ConsumerWidget {
         backgroundColor: const Color(0xFF173518),
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text('Novo Dispositivo', style: TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+
+  Future<bool?> _showDeleteConfirmation(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        title: const Text(
+          'Desvincular Dispositivo',
+          style: TextStyle(color: Color(0xFF173518), fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Tem certeza que deseja desvincular este dispositivo? Você perderá o acesso aos dados dele até vinculá-lo novamente.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade400,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Desvincular', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

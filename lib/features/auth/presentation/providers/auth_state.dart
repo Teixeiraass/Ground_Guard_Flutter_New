@@ -1,4 +1,4 @@
-import '../../data/models/user_model.dart';
+import 'package:ground_guard_app/features/user/data/models/user_model.dart';
 
 enum AuthStatus {
   authenticated,

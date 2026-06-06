@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:ground_guard_app/core/theme/app_colors.dart';
-import 'package:ground_guard_app/core/theme/app_shadows.dart';
-import 'package:ground_guard_app/features/dashboard/dashboard_page.dart';
-import 'package:ground_guard_app/features/schedule/presentation/pages/schedule_page.dart';
-import '../home/home_page.dart';
-import '../profile/profile_page.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_shadows.dart';
+import '../../../dashboard/presentation/pages/dashboard_page.dart';
+import '../../../home/presentation/pages/home_page.dart';
+import '../../../profile/presentation/pages/profile_page.dart';
+import '../../../schedule/presentation/pages/schedule_page.dart';
+import '../widgets/main_header.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -32,56 +33,42 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: currentIndex,
-        children: pages,
+      backgroundColor: const Color(0xFFF6F7F2),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const MainHeader(),
+            Expanded(
+              child: IndexedStack(
+                index: currentIndex,
+                children: pages,
+              ),
+            ),
+          ],
+        ),
       ),
-
       bottomNavigationBar: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 25),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
-          boxShadow: AppShadows.pressedShadow
+          boxShadow: AppShadows.pressedShadow,
         ),
-
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            navItem(
-              index: 0,
-              icon: Icons.home,
-              label: 'Inicio',
-            ),
-
-            navItem(
-              index: 1,
-              icon: Icons.area_chart,
-              label: 'Estatisticas',
-            ),
-
-            navItem(
-              index: 2,
-              icon: Icons.calendar_month,
-              label: 'Agendamentos',
-            ),
-
-            navItem(
-              index: 3,
-              icon: Icons.settings,
-              label: 'Configurações',
-            ),
+            _navItem(index: 0, icon: Icons.home, label: 'Inicio'),
+            _navItem(index: 1, icon: Icons.area_chart, label: 'Estatisticas'),
+            _navItem(index: 2, icon: Icons.calendar_month, label: 'Agendamentos'),
+            _navItem(index: 3, icon: Icons.person, label: 'Perfil'),
           ],
         ),
       ),
     );
   }
 
-  Widget navItem({
+  Widget _navItem({
     required int index,
     required IconData icon,
     required String label,
@@ -91,29 +78,20 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     return Expanded(
       child: GestureDetector(
         onTap: () => onTap(index),
-
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(
-            vertical: 16,
-          ),
-
+          padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary
-                : Colors.transparent,
+            color: selected ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),
-
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                color: selected
-                    ? Colors.white
-                    : Colors.black54,
+                color: selected ? Colors.white : Colors.black54,
                 size: 22,
               ),
             ],

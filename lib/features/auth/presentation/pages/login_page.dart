@@ -45,12 +45,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
 
-    // ESCUTA MUDANÇAS NO ESTADO PARA NAVEGAR
     ref.listen(authProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
         Navigator.pushReplacementNamed(context, AppRoutes.main);
       } else if (next.status == AuthStatus.authenticatedNoDevices) {
-        // TRAVA: SE NÃO TEM DEVICE, VAI DIRETO PRO QR CODE
         Navigator.pushReplacementNamed(context, AppRoutes.qrCodeDevice);
       } else if (next.errorMessage != null && next.status == AuthStatus.unauthenticated) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -66,15 +64,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
-              spacing: 42,
               children: [
+                const SizedBox(height: 42),
                 Column(
-                  spacing: 28,
                   children: [
                     Image.asset(
                       'assets/images/logo.png',
                       width: 120,
                     ),
+                    const SizedBox(height: 28),
                     Text(
                       'Cuidando do seu jardim com\ninteligência e carinho.',
                       textAlign: TextAlign.center,
@@ -85,8 +83,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                   ],
                 ),
-
-                // CARD LOGIN
+                const SizedBox(height: 42),
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -108,7 +105,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // EMAIL
                       Text(
                         'Email',
                         style: theme.textTheme.labelLarge?.copyWith(
@@ -135,10 +131,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 20),
-
-                      // SENHA
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -164,9 +157,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 10),
-
                       TextField(
                         controller: _passwordController,
                         obscureText: true,
@@ -191,10 +182,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 28),
-
-                      // BOTAO ENTRAR
                       SizedBox(
                         width: double.infinity,
                         height: 54,
@@ -236,8 +224,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ],
                   ),
                 ),
-
-                // CRIAR CONTA
+                const SizedBox(height: 42),
                 Column(
                   children: [
                     Text(
@@ -274,6 +261,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 24),
               ],
             ),
           ),

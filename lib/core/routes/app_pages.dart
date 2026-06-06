@@ -6,14 +6,13 @@ import 'package:ground_guard_app/features/auth/presentation/providers/auth_state
 import 'package:ground_guard_app/features/devices/presentation/pages/add_device_qrcode_page.dart';
 import 'package:ground_guard_app/features/devices/presentation/pages/devices_list_page.dart';
 import 'package:ground_guard_app/features/devices/presentation/pages/new_device_qrcode.dart';
-import 'package:ground_guard_app/features/home/home_page.dart';
-import 'package:ground_guard_app/features/navigation/main_navigation_page.dart';
+import 'package:ground_guard_app/features/navigation/presentation/pages/main_navigation_page.dart';
+import 'package:ground_guard_app/features/profile/presentation/pages/edit_profile_page.dart';
 import 'package:ground_guard_app/features/splash/splash_page.dart';
 import 'app_routes.dart';
 
 class AppPages {
   static Route<dynamic> generateRoute(RouteSettings settings, AuthStatus status) {
-    // VALIDAÇÃO DE ACESSO
     if (!RouteGuard.canAccess(settings.name ?? '', status)) {
       return _fadeRoute(
         const Scaffold(
@@ -42,6 +41,9 @@ class AppPages {
 
       case AppRoutes.devicesList:
         return _slideRoute(const DevicesListPage());
+
+      case AppRoutes.editProfile:
+        return _slideRoute(const EditProfilePage());
 
       case AppRoutes.splash:
       default:

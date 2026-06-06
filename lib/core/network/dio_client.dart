@@ -1,14 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_interceptor.dart';
-import 'dart:io';
+import '../util/api_config.dart';
 
 final dioProvider = Provider<Dio>((ref) {
-  const String machineIp = '192.168.15.15';
-
-  final baseUrl = Platform.isAndroid 
-      ? 'http://10.0.2.2:8080' 
-      : 'http://$machineIp:8080';
+  final baseUrl = ApiConfig.baseUrl;
 
   final dio = Dio(
     BaseOptions(

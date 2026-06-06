@@ -1,10 +1,12 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/network/dio_client.dart';
-import '../../../../core/storage/secure_storage_service.dart';
-import '../../data/datasource/auth_remote_datasource.dart';
-import '../../data/repositories/auth_repository_impl.dart';
-import '../../domain/repositories/auth_repository.dart';
+import 'package:ground_guard_app/core/network/dio_client.dart';
+import 'package:ground_guard_app/core/storage/secure_storage_service.dart';
+import 'package:ground_guard_app/features/auth/data/datasource/auth_remote_datasource.dart';
+import 'package:ground_guard_app/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:ground_guard_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:ground_guard_app/features/devices/domain/repositories/devices_repository.dart';
+import 'package:ground_guard_app/features/devices/presentation/providers/devices_provider.dart';
+import 'package:ground_guard_app/features/user/data/models/user_model.dart';
 import 'auth_state.dart';
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
@@ -18,13 +20,16 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.watch(authRepositoryProvider));
+  final authRepository = ref.watch(authRepositoryProvider);
+  final devicesRepository = ref.watch(devicesRepositoryProvider);
+  return AuthNotifier(authRepository, devicesRepository);
 });
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthRepository _repository;
+  final AuthRepository _authRepository;
+  final DevicesRepository _devicesRepository;
 
-  AuthNotifier(this._repository) : super(AuthState.initial()) {
+  AuthNotifier(this._authRepository, this._devicesRepository) : super(AuthState.initial()) {
     checkAuth();
   }
 
@@ -40,13 +45,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, user: user);
 
     try {
-      final hasDevices = await _repository.hasDevices();
+      final hasDevices = await _devicesRepository.hasDevices();
       state = state.copyWith(
         status: hasDevices ? AuthStatus.authenticated : AuthStatus.authenticatedNoDevices,
         user: user,
       );
     } catch (e) {
-      // Se falhar a checagem de devices, deixamos logado por segurança
       state = state.copyWith(status: AuthStatus.authenticated, user: user);
     }
   }
@@ -58,8 +62,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
-      final response = await _repository.login(email, password);
-      final hasDevices = await _repository.hasDevices();
+      final response = await _authRepository.login(email, password);
+      final hasDevices = await _devicesRepository.hasDevices();
 
       state = state.copyWith(
         status: hasDevices ? AuthStatus.authenticated : AuthStatus.authenticatedNoDevices,
@@ -82,7 +86,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
 
     try {
-      await _repository.register(
+      await _authRepository.register(
         username: username,
         fullName: fullName,
         email: email,
@@ -97,38 +101,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> linkDevice(String deviceId) async {
-    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-    try {
-      await _repository.linkDevice(deviceId);
-    } catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.authenticatedNoDevices,
-        errorMessage: e.toString(),
-      );
-      rethrow;
-    }
-  }
-
-  Future<void> updateDeviceName(String deviceId, String name) async {
-    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-    try {
-      await _repository.updateDeviceName(deviceId, name);
-      state = state.copyWith(status: AuthStatus.authenticated);
-    } catch (e) {
-      state = state.copyWith(
-        status: AuthStatus.authenticatedNoDevices,
-        errorMessage: e.toString(),
-      );
-      rethrow;
-    }
-  }
-
   Future<void> logout() async {
-    await _repository.logout();
+    await _authRepository.logout();
     state = state.copyWith(
       status: AuthStatus.unauthenticated,
       user: null,
     );
+  }
+
+  void updateAuthStatus(AuthStatus status) {
+    state = state.copyWith(status: status);
+  }
+  
+  void updateUser(UserModel user) {
+    state = state.copyWith(user: user);
   }
 }

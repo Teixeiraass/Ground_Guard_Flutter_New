@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../features/auth/data/models/user_model.dart';
+import 'package:ground_guard_app/features/user/data/models/user_model.dart';
 
 class SecureStorageService {
   static const _storage = FlutterSecureStorage();

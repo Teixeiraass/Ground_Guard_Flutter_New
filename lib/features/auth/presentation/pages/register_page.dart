@@ -57,7 +57,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       if (next.status == AuthStatus.authenticated) {
         Navigator.pushReplacementNamed(context, AppRoutes.main);
       } else if (next.status == AuthStatus.authenticatedNoDevices) {
-        // Redireciona para o QR Code se não houver dispositivos após registro
         Navigator.pushReplacementNamed(context, AppRoutes.qrCodeDevice);
       } else if (next.errorMessage != null && next.status == AuthStatus.unauthenticated) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -72,15 +71,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
-              spacing: 42,
               children: [
+                const SizedBox(height: 42),
                 Column(
-                  spacing: 28,
                   children: [
                     Image.asset(
                       'assets/images/logo.png',
                       width: 120,
                     ),
+                    const SizedBox(height: 28),
                     Text(
                       'Comece sua jornada de cultivo inteligente e sustentável hoje mesmo.',
                       textAlign: TextAlign.center,
@@ -91,8 +90,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     ),
                   ],
                 ),
-
-                // CARD REGISTER
+                const SizedBox(height: 42),
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -117,25 +115,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       _buildLabel(theme, 'Nome Completo'),
                       const SizedBox(height: 10),
                       _buildTextField(_nameController, 'Seu nome', Icons.person_outline),
-
                       const SizedBox(height: 20),
                       _buildLabel(theme, 'Usuário'),
                       const SizedBox(height: 10),
                       _buildTextField(_usernameController, 'ground_guard123', Icons.badge_outlined),
-
                       const SizedBox(height: 20),
                       _buildLabel(theme, 'Email'),
                       const SizedBox(height: 10),
                       _buildTextField(_emailController, 'nome@exemplo.com', Icons.mail_outline_rounded, keyboardType: TextInputType.emailAddress),
-
                       const SizedBox(height: 20),
                       _buildLabel(theme, 'Senha'),
                       const SizedBox(height: 10),
                       _buildTextField(_passwordController, '••••••••', Icons.lock_outline_rounded, obscure: true),
-
                       const SizedBox(height: 28),
-
-                      // BOTAO CRIAR CONTA
                       SizedBox(
                         width: double.infinity,
                         height: 54,
@@ -171,8 +163,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     ],
                   ),
                 ),
-
-                // VOLTAR PARA LOGIN
+                const SizedBox(height: 42),
                 Column(
                   children: [
                     Text(
@@ -198,7 +189,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
               ],
             ),
           ),

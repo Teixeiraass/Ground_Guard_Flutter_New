@@ -1,4 +1,4 @@
-import 'package:ground_guard_app/features/auth/data/models/user_model.dart';
+import 'package:ground_guard_app/features/user/data/models/user_model.dart';
 
 class LoginResponse {
   final String accessToken;
