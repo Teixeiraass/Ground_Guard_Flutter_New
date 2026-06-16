@@ -7,4 +7,8 @@ class AppRoutes {
   static const addDeviceQrCode = '/add_device_qrcode';
   static const devicesList = '/devices_list';
   static const editProfile = '/edit_profile';
+  static const irrigationPreferences = '/irrigation_preferences';
+  static const notifications = '/notifications';
+  static const support = '/support';
+  static const termsAndServices = '/terms_and_services';
 }

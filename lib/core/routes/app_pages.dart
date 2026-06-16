@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:ground_guard_app/core/routes/route_guard.dart';
 import 'package:ground_guard_app/features/auth/presentation/pages/login_page.dart';
 import 'package:ground_guard_app/features/auth/presentation/pages/register_page.dart';
@@ -8,6 +9,10 @@ import 'package:ground_guard_app/features/devices/presentation/pages/devices_lis
 import 'package:ground_guard_app/features/devices/presentation/pages/new_device_qrcode.dart';
 import 'package:ground_guard_app/features/navigation/presentation/pages/main_navigation_page.dart';
 import 'package:ground_guard_app/features/profile/presentation/pages/edit_profile_page.dart';
+import 'package:ground_guard_app/features/alerts/presentation/pages/notifications_page.dart';
+import 'package:ground_guard_app/features/profile/presentation/pages/irrigation_preferences_page.dart';
+import 'package:ground_guard_app/features/support/presentation/pages/support_page.dart';
+import 'package:ground_guard_app/features/support/presentation/pages/terms_and_services_page.dart';
 import 'package:ground_guard_app/features/splash/splash_page.dart';
 import 'app_routes.dart';
 
@@ -25,25 +30,37 @@ class AppPages {
 
     switch (settings.name) {
       case AppRoutes.login:
-        return _slideRoute(const LoginPage());
+        return _slideRoute(const LoginPage(), settings);
 
       case AppRoutes.register:
-        return _slideRoute(const RegisterPage());
+        return _slideRoute(const RegisterPage(), settings);
 
       case AppRoutes.main:
-        return _slideRoute(const MainNavigationPage());
+        return _slideRoute(const MainNavigationPage(), settings);
 
       case AppRoutes.qrCodeDevice:
-        return _slideRoute(const NewDeviceQrcode());
+        return _slideRoute(const NewDeviceQrcode(), settings);
 
       case AppRoutes.addDeviceQrCode:
-        return _slideRoute(const AddDeviceQrCodePage());
+        return _slideRoute(const AddDeviceQrCodePage(), settings);
 
       case AppRoutes.devicesList:
-        return _slideRoute(const DevicesListPage());
+        return _slideRoute(const DevicesListPage(), settings);
 
       case AppRoutes.editProfile:
-        return _slideRoute(const EditProfilePage());
+        return _slideRoute(const EditProfilePage(), settings);
+
+      case AppRoutes.irrigationPreferences:
+        return _slideRoute(const IrrigationPreferencesPage(), settings);
+
+      case AppRoutes.notifications:
+        return _slideRoute(const NotificationsPage(), settings);
+
+      case AppRoutes.support:
+        return _slideRoute(const SupportPage(), settings);
+
+      case AppRoutes.termsAndServices:
+        return _slideRoute(const TermsAndServicesPage(), settings);
 
       case AppRoutes.splash:
       default:
@@ -59,16 +76,10 @@ class AppPages {
     );
   }
 
-  static PageRouteBuilder _slideRoute(Widget page) {
-    return PageRouteBuilder(
-      pageBuilder: (_, __, ___) => page,
-      transitionDuration: const Duration(milliseconds: 350),
-      transitionsBuilder: (_, animation, __, child) {
-        const begin = Offset(0.08, 0);
-        const end = Offset.zero;
-        final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.easeOutCubic));
-        return SlideTransition(position: animation.drive(tween), child: FadeTransition(opacity: animation, child: child));
-      },
+  static Route<dynamic> _slideRoute(Widget page, RouteSettings settings) {
+    return CupertinoPageRoute(
+      builder: (_) => page,
+      settings: settings,
     );
   }
 }

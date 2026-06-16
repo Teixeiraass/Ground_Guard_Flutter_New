@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../components/user_avatar.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
+import 'package:ground_guard_app/core/routes/app_routes.dart';
+
 class MainHeader extends ConsumerWidget {
   const MainHeader({super.key});
 
@@ -39,7 +41,7 @@ class MainHeader extends ConsumerWidget {
           Row(
             children: [
               IconButton(
-                onPressed: () {},
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
                 icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1D3520)),
               ),
               const SizedBox(width: 4),

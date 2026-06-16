@@ -161,9 +161,21 @@ class ProfilePage extends ConsumerWidget {
           title: 'Meus Dispositivos IoT',
           onTap: () => Navigator.pushNamed(context, AppRoutes.devicesList),
         ),
-        _menuItem(icon: Icons.water_drop_outlined, title: 'Preferências de Irrigação'),
-        _menuItem(icon: Icons.notifications_none_rounded, title: 'Notificações'),
-        _menuItem(icon: Icons.help_outline_rounded, title: 'Ajuda e Suporte'),
+        _menuItem(
+          icon: Icons.water_drop_outlined,
+          title: 'Preferências de Irrigação',
+          onTap: () => Navigator.pushNamed(context, AppRoutes.irrigationPreferences),
+        ),
+        _menuItem(
+          icon: Icons.notifications_none_rounded,
+          title: 'Notificações',
+          onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
+        ),
+        _menuItem(
+          icon: Icons.help_outline_rounded,
+          title: 'Ajuda e Suporte',
+          onTap: () => Navigator.pushNamed(context, AppRoutes.support),
+        ),
         const SizedBox(height: 14),
         InkWell(
           onTap: () async {
