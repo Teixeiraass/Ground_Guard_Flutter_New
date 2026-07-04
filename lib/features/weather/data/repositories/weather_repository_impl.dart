@@ -17,4 +17,19 @@ class WeatherRepositoryImpl implements WeatherRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getForecast(String city) async {
+    try {
+      final data = await _remoteDataSource.getForecastData(city);
+      return (data['list'] as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<String> getLocalCity() async {
+    return _remoteDataSource.getCityByIp();
+  }
 }

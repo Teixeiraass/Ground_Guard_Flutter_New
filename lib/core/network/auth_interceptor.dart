@@ -3,8 +3,9 @@ import '../storage/secure_storage_service.dart';
 
 class AuthInterceptor extends Interceptor {
   final Dio _dio;
+  final Future<void> Function()? onUnauthorized;
 
-  AuthInterceptor(this._dio);
+  AuthInterceptor(this._dio, {this.onUnauthorized});
 
   @override
   void onRequest(
@@ -20,16 +21,26 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // Só tenta o refresh se for erro 401 e NÃO for na própria rota de refresh para evitar loop infinito
-    if (err.response?.statusCode == 401 && !err.requestOptions.path.contains('/tokens/refresh')) {
-      
+    // 1. Detecta erro de falta de acesso (401 Unauthorized ou 403 Forbidden)
+    final isUnauthorized = err.response?.statusCode == 401 || err.response?.statusCode == 403;
+    final isRefreshRoute = err.requestOptions.path.contains('/tokens/refresh');
+
+    if (isUnauthorized) {
+      // Se o erro ocorreu na própria rota de refresh, a sessão expirou de vez
+      if (isRefreshRoute) {
+        print('DEBUG_AUTH: Falha definitiva no Refresh Token (401/403). Forçando logout...');
+        await _forceLogout();
+        return handler.next(err);
+      }
+
+      // Se não for na rota de refresh, tenta renovar o token
       print('DEBUG_AUTH: Token expirado em ${err.requestOptions.path}. Tentando renovar...');
       
       final refreshToken = await SecureStorageService.getRefreshToken();
       
       if (refreshToken != null) {
         try {
-          // Cria uma instância limpa para o refresh (sem este interceptor para não dar loop)
+          // Instância limpa para o refresh
           final refreshDio = Dio(BaseOptions(
             baseUrl: _dio.options.baseUrl,
             contentType: 'application/json',
@@ -43,10 +54,9 @@ class AuthInterceptor extends Interceptor {
           final newAccessToken = response.data['access_token'];
           print('DEBUG_AUTH: Novo token obtido com sucesso!');
 
-          // Salva o novo token
           await SecureStorageService.saveAccessToken(newAccessToken);
 
-          // Atualiza o header da requisição original e repete
+          // Repete a requisição original
           final requestOptions = err.requestOptions;
           requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
           
@@ -60,20 +70,25 @@ class AuthInterceptor extends Interceptor {
             queryParameters: requestOptions.queryParameters,
           );
 
-          // Resolve a requisição original com o resultado da nova tentativa
           return handler.resolve(clonedRequest);
           
         } catch (e) {
-          print('DEBUG_AUTH: Falha crítica no Refresh Token: $e');
-          // Se falhou o refresh, limpa tudo pois a sessão realmente expirou
-          await SecureStorageService.clear();
+          print('DEBUG_AUTH: Erro durante tentativa de refresh: $e');
+          await _forceLogout();
         }
       } else {
-        print('DEBUG_AUTH: Refresh Token não encontrado no storage.');
+        print('DEBUG_AUTH: Refresh Token não encontrado. Forçando logout...');
+        await _forceLogout();
       }
     }
     
-    // Se não entrou no IF ou se o try/catch falhou, passa o erro adiante
     return handler.next(err);
+  }
+
+  Future<void> _forceLogout() async {
+    await SecureStorageService.clear();
+    if (onUnauthorized != null) {
+      await onUnauthorized!();
+    }
   }
 }

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
+import '../providers/support_provider.dart';
 
-class TermsAndServicesPage extends StatelessWidget {
+class TermsAndServicesPage extends ConsumerWidget {
   const TermsAndServicesPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final termsAsync = ref.watch(termsAndServicesProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -17,51 +20,36 @@ class TermsAndServicesPage extends StatelessWidget {
         title: const Text('Termos e Serviços'),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeaderImage(),
-            const SizedBox(height: 32),
-            _buildTermCard(
-              icon: Icons.diamond_outlined,
-              title: 'ACEITAÇÃO DOS TERMOS',
-              content: 'Ao usar o Ground Guard, você concorda com nossos termos de operação digital. Este sistema foi desenhado para harmonizar a tecnologia de automação com o cuidado orgânico das suas plantas, estabelecendo uma relação de confiança entre o zelador e o jardim.',
-            ),
-            const SizedBox(height: 20),
-            _buildTermCard(
-              icon: Icons.router_outlined,
-              title: 'USO DO APLICATIVO',
-              content: 'O uso indevido para fins não agrícolas ou modificações não autorizadas no hardware podem comprometer a garantia e a precisão dos dados coletados pelos sensores de solo.',
-              quote: '"O sistema IOT deve ser usado apenas para fins de irrigação e monitoramento de saúde vegetal."',
-            ),
-            const SizedBox(height: 20),
-            _buildTermCard(
-              icon: Icons.shield_outlined,
-              title: 'PRIVACIDADE',
-              content: 'Seus dados de umidade e localização são protegidos com criptografia de ponta a ponta. Valorizamos a sua privacidade tanto quanto a saúde das suas flores. Informações sobre padrões de rega são utilizadas apenas para otimizar os algoritmos de economia de água do seu dispositivo.',
-            ),
-            const SizedBox(height: 20),
-            _buildTermCard(
-              icon: Icons.warning_amber_rounded,
-              title: 'ISENÇÃO DE RESPONSABILIDADE',
-              content: 'Embora busquemos a perfeição técnica, não nos responsabilizamos por plantas que morram devido a falhas de conectividade, bateria descarregada ou condições de clima extremo que superem a capacidade de drenagem do sistema.',
-              borderColor: Colors.red.shade100,
-            ),
-            const SizedBox(height: 32),
-            const Center(
-              child: Text(
-                'Última atualização: Outubro 2023',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
+      body: termsAsync.when(
+        data: (doc) {
+          if (doc == null) {
+            return const Center(child: Text('Nenhum documento de termos encontrado.'));
+          }
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeaderImage(),
+                const SizedBox(height: 32),
+                _buildDynamicContent(doc.content),
+                const SizedBox(height: 32),
+                Center(
+                  child: Text(
+                    'Versão: ${doc.version}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 40),
+              ],
             ),
-            const SizedBox(height: 40),
-          ],
-        ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Erro ao carregar termos: $err')),
       ),
     );
   }
@@ -118,13 +106,57 @@ class TermsAndServicesPage extends StatelessWidget {
     );
   }
 
+  Widget _buildDynamicContent(String content) {
+    // Split content by '#' to identify headers and sections
+    final sections = content.split('#').where((s) => s.trim().isNotEmpty).toList();
+    
+    return Column(
+      children: sections.map((section) {
+        final lines = section.trim().split('\n');
+        final title = lines[0].trim();
+        final body = lines.sublist(1).join('\n').trim();
+        
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: _buildTermCard(
+            icon: _getIconForTitle(title),
+            title: title.toUpperCase(),
+            content: body,
+            borderColor: title.toLowerCase().contains('isenção') ? Colors.red.shade100 : null,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  IconData _getIconForTitle(String title) {
+    final t = title.toLowerCase();
+    if (t.contains('aceitação')) return Icons.diamond_outlined;
+    if (t.contains('uso')) return Icons.router_outlined;
+    if (t.contains('privacidade')) return Icons.shield_outlined;
+    if (t.contains('isenção')) return Icons.warning_amber_rounded;
+    return Icons.description_outlined;
+  }
+
   Widget _buildTermCard({
     required IconData icon,
     required String title,
     required String content,
-    String? quote,
     Color? borderColor,
   }) {
+    // Check if content has a quote (enclosed in double quotes)
+    String? quote;
+    String cleanContent = content;
+    
+    if (content.contains('"')) {
+      final startIndex = content.indexOf('"');
+      final endIndex = content.lastIndexOf('"');
+      if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
+        quote = content.substring(startIndex, endIndex + 1);
+        cleanContent = (content.substring(0, startIndex) + content.substring(endIndex + 1)).trim();
+      }
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -147,13 +179,15 @@ class TermsAndServicesPage extends StatelessWidget {
             children: [
               Icon(icon, size: 20, color: const Color(0xFF8B5A2B)),
               const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF8B5A2B),
-                  letterSpacing: 1.1,
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF8B5A2B),
+                    letterSpacing: 1.1,
+                  ),
                 ),
               ),
             ],
@@ -162,6 +196,7 @@ class TermsAndServicesPage extends StatelessWidget {
           if (quote != null) ...[
             Container(
               padding: const EdgeInsets.all(16),
+              width: double.infinity,
               decoration: BoxDecoration(
                 color: const Color(0xFFF9F9F6),
                 borderRadius: BorderRadius.circular(16),
@@ -179,7 +214,7 @@ class TermsAndServicesPage extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           Text(
-            content,
+            cleanContent,
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade600,

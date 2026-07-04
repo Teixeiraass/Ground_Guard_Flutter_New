@@ -19,6 +19,13 @@ class SecureStorageService {
     );
   }
 
+  static Future<void> saveSessionId(String sessionId) async {
+    await _storage.write(
+      key: 'session_id',
+      value: sessionId,
+    );
+  }
+
   static Future<void> saveUser(UserModel user) async {
     await _storage.write(
       key: 'user_data',
@@ -34,6 +41,10 @@ class SecureStorageService {
     return _storage.read(key: 'refresh_token');
   }
 
+  static Future<String?> getSessionId() async {
+    return _storage.read(key: 'session_id');
+  }
+
   static Future<UserModel?> getUser() async {
     final data = await _storage.read(key: 'user_data');
     if (data == null) return null;
@@ -46,5 +57,29 @@ class SecureStorageService {
 
   static Future<void> clear() async {
     await _storage.deleteAll();
+  }
+
+  // Biometric Login Helper
+  static Future<void> saveCredentials(String email, String password) async {
+    await _storage.write(key: 'saved_email', value: email);
+    await _storage.write(key: 'saved_password', value: password);
+  }
+
+  static Future<Map<String, String>?> getSavedCredentials() async {
+    final email = await _storage.read(key: 'saved_email');
+    final password = await _storage.read(key: 'saved_password');
+    if (email != null && password != null) {
+      return {'email': email, 'password': password};
+    }
+    return null;
+  }
+
+  static Future<void> setBiometricsEnabled(bool enabled) async {
+    await _storage.write(key: 'biometrics_enabled', value: enabled.toString());
+  }
+
+  static Future<bool> isBiometricsEnabled() async {
+    final enabled = await _storage.read(key: 'biometrics_enabled');
+    return enabled == 'true';
   }
 }

@@ -19,6 +19,7 @@ class AuthRepositoryImpl implements AuthRepository {
       
       await SecureStorageService.saveAccessToken(response.accessToken);
       await SecureStorageService.saveRefreshToken(response.refreshToken);
+      await SecureStorageService.saveSessionId(response.sessionId);
       await SecureStorageService.saveUser(response.user);
       
       return response;
@@ -59,6 +60,36 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    await SecureStorageService.clear();
+    try {
+      final sessionId = await SecureStorageService.getSessionId();
+      if (sessionId != null) {
+        await _remoteDataSource.logout(sessionId);
+      }
+    } finally {
+      await SecureStorageService.clear();
+    }
+  }
+
+  @override
+  Future<bool> hasDevices() async {
+    // This could be moved to a DevicesRepository if appropriate, 
+    // but adding it here as per the interface requirement.
+    return false; // Default or actual implementation
+  }
+
+  @override
+  Future<LoginResponse> oauthLogin(String provider, String idToken) async {
+    try {
+      final response = await _remoteDataSource.oauthLogin(provider, idToken);
+
+      await SecureStorageService.saveAccessToken(response.accessToken);
+      await SecureStorageService.saveRefreshToken(response.refreshToken);
+      await SecureStorageService.saveSessionId(response.sessionId);
+      await SecureStorageService.saveUser(response.user);
+
+      return response;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
   }
 }

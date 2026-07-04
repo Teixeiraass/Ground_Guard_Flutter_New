@@ -4,6 +4,20 @@
 	<dict>
 	    <key>NSCameraUsageDescription</key>
         <string>Precisamos da câmera para ler o QR Code do dispositivo.</string>
+	    <key>NSFaceIDUsageDescription</key>
+        <string>Utilizamos o Face ID para autenticar seu acesso de forma segura e rápida.</string>
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<!-- Cole seu REVERSED_CLIENT_ID aqui -->
+					<string>com.googleusercontent.apps.SEU_ID_AQUI</string>
+				</array>
+			</dict>
+		</array>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>

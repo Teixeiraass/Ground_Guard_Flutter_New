@@ -21,7 +21,7 @@ class ProfilePage extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async {
           await ref.read(userProvider.notifier).fetchUserProfile();
-          await ref.read(weatherProvider.notifier).fetchWeather('São Paulo');
+          await ref.read(weatherProvider.notifier).fetchWeather();
         },
         child: userAsync.when(
           data: (user) => _buildProfileContent(context, ref, user, weatherAsync),
@@ -223,7 +223,7 @@ class ProfilePage extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'PREVISÃO LOCAL',
+                    'PREVISÃO LOCAL: ${weather.cityName.toUpperCase()}',
                     style: TextStyle(
                       fontSize: 14,
                       letterSpacing: 1,
@@ -233,7 +233,7 @@ class ProfilePage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${weather.temperature.toStringAsFixed(0)}°C ${weather.description}',
+                    '${weather.temperature.toStringAsFixed(0)}°C ${weather.description[0].toUpperCase()}${weather.description.substring(1)}',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF274029)),
                   ),
                   const SizedBox(height: 4),

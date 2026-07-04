@@ -16,6 +16,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "flutter_native_splash", path: "../.packages/flutter_native_splash-2.4.7"),
+        .package(name: "local_auth_darwin", path: "../.packages/local_auth_darwin-1.6.1"),
         .package(name: "image_picker_ios", path: "../.packages/image_picker_ios-0.8.13+6"),
         .package(name: "FlutterFramework", path: "../.packages/FlutterFramework")
     ],
@@ -24,6 +25,7 @@ let package = Package(
             name: "FlutterGeneratedPluginSwiftPackage",
             dependencies: [
                 .product(name: "flutter-native-splash", package: "flutter_native_splash"),
+                .product(name: "local-auth-darwin", package: "local_auth_darwin"),
                 .product(name: "image-picker-ios", package: "image_picker_ios"),
                 .product(name: "FlutterFramework", package: "FlutterFramework")
             ]

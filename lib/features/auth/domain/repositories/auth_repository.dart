@@ -10,4 +10,6 @@ abstract class AuthRepository {
   });
   Future<String> refreshToken(String refreshToken);
   Future<void> logout();
+  Future<bool> hasDevices();
+  Future<LoginResponse> oauthLogin(String provider, String idToken);
 }

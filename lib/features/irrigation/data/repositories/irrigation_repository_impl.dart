@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../datasources/irrigation_remote_datasource.dart';
 import '../models/irrigation_preference_model.dart';
+import '../models/irrigation_command_model.dart';
 import '../../domain/repositories/irrigation_repository.dart';
 import '../../../../core/network/api_exception.dart';
 
@@ -35,6 +36,26 @@ class IrrigationRepositoryImpl implements IrrigationRepository {
   Future<void> updateIrrigationPreference(String uuid, Map<String, dynamic> preferenceData) async {
     try {
       await _remoteDataSource.updateIrrigationPreference(uuid, preferenceData);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  @override
+  Future<IrrigationCommandModel> sendCommand(String deviceUuid, String action) async {
+    try {
+      final data = await _remoteDataSource.sendIrrigationCommand(deviceUuid, action);
+      return IrrigationCommandModel.fromJson(data);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  @override
+  Future<IrrigationCommandModel> getCommandStatus(String commandUuid) async {
+    try {
+      final data = await _remoteDataSource.getCommandStatus(commandUuid);
+      return IrrigationCommandModel.fromJson(data);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

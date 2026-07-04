@@ -6,6 +6,8 @@ abstract class AuthRemoteDataSource {
   Future<LoginResponse> login(LoginRequest request);
   Future<void> register(Map<String, dynamic> userData);
   Future<String> refreshToken(String refreshToken);
+  Future<void> logout(String sessionId);
+  Future<LoginResponse> oauthLogin(String provider, String idToken);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -19,6 +21,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final response = await _dio.post(
         '/users/login',
         data: request.toJson(),
+      );
+      return LoginResponse.fromJson(response.data);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<LoginResponse> oauthLogin(String provider, String idToken) async {
+    try {
+      final response = await _dio.post(
+        '/users/oauth/$provider',
+        data: {'id_token': idToken},
       );
       return LoginResponse.fromJson(response.data);
     } catch (e) {
@@ -46,6 +61,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: {'refresh_token': refreshToken},
       );
       return response.data['access_token'];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> logout(String sessionId) async {
+    try {
+      await _dio.post(
+        '/users/logout',
+        data: {'session_id': sessionId},
+      );
     } catch (e) {
       rethrow;
     }

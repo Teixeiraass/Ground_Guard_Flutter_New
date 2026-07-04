@@ -7,6 +7,7 @@ import 'package:ground_guard_app/features/auth/domain/repositories/auth_reposito
 import 'package:ground_guard_app/features/devices/domain/repositories/devices_repository.dart';
 import 'package:ground_guard_app/features/devices/presentation/providers/devices_provider.dart';
 import 'package:ground_guard_app/features/user/data/models/user_model.dart';
+import 'package:ground_guard_app/core/auth/auth_signals.dart';
 import 'auth_state.dart';
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
@@ -22,15 +23,33 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   final devicesRepository = ref.watch(devicesRepositoryProvider);
-  return AuthNotifier(authRepository, devicesRepository);
+  return AuthNotifier(authRepository, devicesRepository, ref);
 });
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
   final DevicesRepository _devicesRepository;
+  final Ref _ref;
 
-  AuthNotifier(this._authRepository, this._devicesRepository) : super(AuthState.initial()) {
+  AuthNotifier(this._authRepository, this._devicesRepository, this._ref) : super(AuthState.initial()) {
     checkAuth();
+    _listenToForceLogout();
+  }
+
+  void _listenToForceLogout() {
+    _ref.listen(forceLogoutProvider, (previous, next) {
+      if (next == true) {
+        logoutLocal();
+        _ref.read(forceLogoutProvider.notifier).state = false;
+      }
+    });
+  }
+
+  void logoutLocal() {
+    state = state.copyWith(
+      status: AuthStatus.unauthenticated,
+      user: null,
+    );
   }
 
   Future<void> checkAuth() async {
@@ -51,7 +70,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
         user: user,
       );
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.authenticated, user: user);
+      if (state.status != AuthStatus.unauthenticated) {
+        state = state.copyWith(status: AuthStatus.authenticated, user: user);
+      }
     }
   }
 
