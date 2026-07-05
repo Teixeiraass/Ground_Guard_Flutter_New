@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../datasources/weather_remote_datasource.dart';
 import '../models/weather_model.dart';
 import '../../domain/repositories/weather_repository.dart';

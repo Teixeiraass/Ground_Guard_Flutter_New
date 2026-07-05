@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ground_guard_app/core/theme/app_colors.dart';
-import 'package:ground_guard_app/core/theme/app_spacing.dart';
 import 'package:ground_guard_app/features/user/data/models/user_model.dart';
 import 'package:ground_guard_app/features/user/presentation/providers/user_provider.dart';
 import 'package:ground_guard_app/components/user_avatar.dart';
