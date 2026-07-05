@@ -27,23 +27,32 @@ class _HomePageState extends ConsumerState<HomePage> {
     final rainForecastAsync = ref.watch(rainForecastProvider);
 
     // Escuta mudanças de estado para mostrar Snackbars
-    ref.listen<AsyncValue<IrrigationCommandModel?>>(irrigationControllerProvider, (prev, next) {
-      next.whenData((command) {
-        if (command == null) return;
-        
-        if (command.status == IrrigationStatus.failed) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Falha na irrigação. Tente novamente.'), backgroundColor: Colors.red),
-          );
-          ref.read(irrigationControllerProvider.notifier).reset();
-        } else if (command.status == IrrigationStatus.timeout) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('O dispositivo não respondeu (Timeout).'), backgroundColor: Colors.orange),
-          );
-          ref.read(irrigationControllerProvider.notifier).reset();
-        }
-      });
-    });
+    ref.listen<AsyncValue<IrrigationCommandModel?>>(
+      irrigationControllerProvider,
+      (prev, next) {
+        next.whenData((command) {
+          if (command == null) return;
+
+          if (command.status == IrrigationStatus.failed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Falha na irrigação. Tente novamente.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            ref.read(irrigationControllerProvider.notifier).reset();
+          } else if (command.status == IrrigationStatus.timeout) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('O dispositivo não respondeu (Timeout).'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            ref.read(irrigationControllerProvider.notifier).reset();
+          }
+        });
+      },
+    );
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -66,12 +75,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                     Center(
                       child: Text(
                         irrigationState.maybeWhen(
-                          data: (cmd) => cmd?.status == IrrigationStatus.pending 
-                              ? 'Aguardando confirmação do sensor...' 
+                          data: (cmd) => cmd?.status == IrrigationStatus.pending
+                              ? 'Aguardando confirmação do sensor...'
                               : 'Pressione para iniciar ciclo de 15 min',
-                          orElse: () => 'Pressione para iniciar ciclo de 15 min',
+                          orElse: () =>
+                              'Pressione para iniciar ciclo de 15 min',
                         ),
-                        style: const TextStyle(color: Colors.grey, fontSize: 15),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 34),
@@ -79,12 +92,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                     const SizedBox(height: 20),
                     _buildZonesGrid(devices),
                     rainForecastAsync.when(
-                      data: (rain) => rain.willRain 
-                        ? Padding(
-                            padding: const EdgeInsets.only(top: 28),
-                            child: _buildWeatherAlert(rain),
-                          )
-                        : const SizedBox.shrink(),
+                      data: (rain) => rain.willRain
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 28),
+                              child: _buildWeatherAlert(rain),
+                            )
+                          : const SizedBox.shrink(),
                       loading: () => const SizedBox.shrink(),
                       error: (_, __) => const SizedBox.shrink(),
                     ),
@@ -95,12 +108,16 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Erro ao carregar dispositivos: $err')),
+        error: (err, stack) =>
+            Center(child: Text('Erro ao carregar dispositivos: $err')),
       ),
     );
   }
 
-  Widget _buildDynamicIrrigationButton(List<DeviceModel> devices, AsyncValue<IrrigationCommandModel?> state) {
+  Widget _buildDynamicIrrigationButton(
+    List<DeviceModel> devices,
+    AsyncValue<IrrigationCommandModel?> state,
+  ) {
     String deviceName = 'Jardim';
     String? selectedUuid;
 
@@ -128,8 +145,10 @@ class _HomePageState extends ConsumerState<HomePage> {
             icon: Icons.stop_circle_outlined,
             color: Colors.red.shade800,
             onTap: () {
-               if (selectedUuid != null) {
-                ref.read(irrigationControllerProvider.notifier).stopIrrigation(selectedUuid);
+              if (selectedUuid != null) {
+                ref
+                    .read(irrigationControllerProvider.notifier)
+                    .stopIrrigation(selectedUuid);
               }
             },
           );
@@ -137,16 +156,24 @@ class _HomePageState extends ConsumerState<HomePage> {
 
         // Estado inicial / ocioso
         return _buttonContainer(
-          label: _selectedDeviceIndex == 0 ? 'Irrigar Jardim' : 'Irrigar ${deviceName.split(' ')[0]}',
+          label: _selectedDeviceIndex == 0
+              ? 'Irrigar Jardim'
+              : 'Irrigar ${deviceName.split(' ')[0]}',
           icon: Icons.water_drop_outlined,
           color: const Color(0xFF0B4B16),
           onTap: () {
             if (selectedUuid != null) {
-              ref.read(irrigationControllerProvider.notifier).startIrrigation(selectedUuid);
+              ref
+                  .read(irrigationControllerProvider.notifier)
+                  .startIrrigation(selectedUuid);
             } else {
               // Lógica de "Irrigar Todos" pode ser disparada aqui também se desejar
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Selecione uma zona para irrigar especificamente.')),
+                const SnackBar(
+                  content: Text(
+                    'Selecione uma zona para irrigar especificamente.',
+                  ),
+                ),
               );
             }
           },
@@ -167,7 +194,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buttonContainer({required String label, required IconData icon, required Color color, VoidCallback? onTap}) {
+  Widget _buttonContainer({
+    required String label,
+    required IconData icon,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(50),
@@ -178,7 +210,11 @@ class _HomePageState extends ConsumerState<HomePage> {
           color: color,
           borderRadius: BorderRadius.circular(50),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 18, offset: const Offset(0, 8)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
           ],
         ),
         child: Row(
@@ -188,7 +224,11 @@ class _HomePageState extends ConsumerState<HomePage> {
             const SizedBox(width: 10),
             Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -198,7 +238,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Widget _buildDeviceSelector(List<DeviceModel> devices) {
     final allOptions = ['Visão Geral', ...devices.map((d) => d.name)];
-    
+
     return Container(
       padding: const EdgeInsets.only(top: 10, left: 20, right: 20),
       child: Column(
@@ -206,15 +246,19 @@ class _HomePageState extends ConsumerState<HomePage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.local_florist_outlined, size: 18, color: AppColors.primary),
+              const Icon(
+                Icons.local_florist_outlined,
+                size: 18,
+                color: AppColors.primary,
+              ),
               const SizedBox(width: 8),
               Text(
                 'MONITORANDO',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      letterSpacing: 1.1,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary.withOpacity(0.7),
-                    ),
+                  letterSpacing: 1.1,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary.withOpacity(0.7),
+                ),
               ),
             ],
           ),
@@ -245,7 +289,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
-                        color: isSelected ? AppColors.primary : AppColors.outline.withOpacity(0.2),
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.outline.withOpacity(0.2),
                       ),
                     ),
                     showCheckmark: false,
@@ -293,16 +339,16 @@ class _HomePageState extends ConsumerState<HomePage> {
                     const SizedBox(height: 12),
                     const Text(
                       'Próxima rega hoje às\n18:30',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFCDEBC2),
                   borderRadius: BorderRadius.circular(24),
@@ -319,10 +365,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                     Text(
                       'Vitalidade',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF214225),
-                      ),
+                      style: TextStyle(fontSize: 14, color: Color(0xFF214225)),
                     ),
                   ],
                 ),
@@ -362,19 +405,12 @@ class _HomePageState extends ConsumerState<HomePage> {
       height: 170,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFFF5B041),
-          width: 12,
-        ),
+        border: Border.all(color: const Color(0xFFF5B041), width: 12),
       ),
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.water_drop_outlined,
-            size: 34,
-            color: Color(0xFF8B5A00),
-          ),
+          Icon(Icons.water_drop_outlined, size: 34, color: Color(0xFF8B5A00)),
           SizedBox(height: 6),
           Text(
             '70%',
@@ -386,10 +422,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           Text(
             'Umidade',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.black54,
-            ),
+            style: TextStyle(fontSize: 18, color: Colors.black54),
           ),
         ],
       ),
@@ -470,10 +503,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(
-              Icons.cloud_outlined,
-              color: Color(0xFF214225),
-            ),
+            child: const Icon(Icons.cloud_outlined, color: Color(0xFF214225)),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -491,10 +521,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 const SizedBox(height: 4),
                 Text(
                   'Pode chover $when.\nPrevisão de ${volume.toStringAsFixed(1)}mm de chuva.',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Colors.black54,
-                  ),
+                  style: const TextStyle(fontSize: 15, color: Colors.black54),
                 ),
               ],
             ),
