@@ -9,7 +9,6 @@ class MockWeatherRepository extends Mock implements WeatherRepository {}
 
 void main() {
   late MockWeatherRepository mockRepository;
-  late WeatherNotifier weatherNotifier;
 
   final tWeather = WeatherModel(
     temperature: 20.0,

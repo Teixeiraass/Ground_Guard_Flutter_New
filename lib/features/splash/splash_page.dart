@@ -39,6 +39,8 @@ class _SplashPageState extends ConsumerState<SplashPage> {
     // 2. Garante que o AuthProvider terminou de checar o token e dispositivos
     await ref.read(authProvider.notifier).checkAuth();
 
+    if (!mounted) return;
+
     final authStatus = ref.read(authProvider).status;
 
     // 3. Decisão de rota final

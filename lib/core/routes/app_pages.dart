@@ -70,9 +70,9 @@ class AppPages {
 
   static PageRouteBuilder _fadeRoute(Widget page) {
     return PageRouteBuilder(
-      pageBuilder: (_, __, ___) => page,
+      pageBuilder: (_, _, _) => page,
       transitionDuration: const Duration(milliseconds: 250),
-      transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+      transitionsBuilder: (_, animation, _, child) => FadeTransition(opacity: animation, child: child),
     );
   }
 

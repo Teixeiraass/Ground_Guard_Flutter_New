@@ -5,8 +5,12 @@ class RouteGuard {
   static AuthStatus authStatus = AuthStatus.unauthenticated;
 
   static String initialRoute() {
-    if (authStatus == AuthStatus.authenticated) return AppRoutes.main;
-    if (authStatus == AuthStatus.authenticatedNoDevices) return AppRoutes.qrCodeDevice;
+    if (authStatus == AuthStatus.authenticated) {
+      return AppRoutes.main;
+    }
+    if (authStatus == AuthStatus.authenticatedNoDevices) {
+      return AppRoutes.qrCodeDevice;
+    }
     return AppRoutes.login;
   }
 

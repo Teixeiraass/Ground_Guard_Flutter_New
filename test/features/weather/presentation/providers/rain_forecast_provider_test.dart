@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:ground_guard_app/features/weather/domain/repositories/weather_repository.dart';
 import 'package:ground_guard_app/features/weather/presentation/providers/weather_provider.dart';
-import 'package:ground_guard_app/features/weather/data/models/rain_forecast_model.dart';
 
 class MockWeatherRepository extends Mock implements WeatherRepository {}
 

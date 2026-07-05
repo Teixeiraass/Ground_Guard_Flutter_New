@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../storage/secure_storage_service.dart';
 
 class AuthInterceptor extends Interceptor {
@@ -28,13 +29,13 @@ class AuthInterceptor extends Interceptor {
     if (isUnauthorized) {
       // Se o erro ocorreu na própria rota de refresh, a sessão expirou de vez
       if (isRefreshRoute) {
-        print('DEBUG_AUTH: Falha definitiva no Refresh Token (401/403). Forçando logout...');
+        debugPrint('DEBUG_AUTH: Falha definitiva no Refresh Token (401/403). Forçando logout...');
         await _forceLogout();
         return handler.next(err);
       }
 
       // Se não for na rota de refresh, tenta renovar o token
-      print('DEBUG_AUTH: Token expirado em ${err.requestOptions.path}. Tentando renovar...');
+      debugPrint('DEBUG_AUTH: Token expirado em ${err.requestOptions.path}. Tentando renovar...');
       
       final refreshToken = await SecureStorageService.getRefreshToken();
       
@@ -52,7 +53,7 @@ class AuthInterceptor extends Interceptor {
           );
 
           final newAccessToken = response.data['access_token'];
-          print('DEBUG_AUTH: Novo token obtido com sucesso!');
+          debugPrint('DEBUG_AUTH: Novo token obtido com sucesso!');
 
           await SecureStorageService.saveAccessToken(newAccessToken);
 
@@ -73,11 +74,11 @@ class AuthInterceptor extends Interceptor {
           return handler.resolve(clonedRequest);
           
         } catch (e) {
-          print('DEBUG_AUTH: Erro durante tentativa de refresh: $e');
+          debugPrint('DEBUG_AUTH: Erro durante tentativa de refresh: $e');
           await _forceLogout();
         }
       } else {
-        print('DEBUG_AUTH: Refresh Token não encontrado. Forçando logout...');
+        debugPrint('DEBUG_AUTH: Refresh Token não encontrado. Forçando logout...');
         await _forceLogout();
       }
     }

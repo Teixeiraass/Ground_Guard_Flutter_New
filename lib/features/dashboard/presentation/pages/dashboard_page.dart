@@ -177,7 +177,7 @@ class DashboardPage extends StatelessWidget {
                 title,
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1D3520)),
               ),
-              if (trailing != null) trailing,
+              ?trailing,
             ],
           ),
           child,

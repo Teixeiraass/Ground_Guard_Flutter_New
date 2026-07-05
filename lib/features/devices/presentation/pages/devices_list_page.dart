@@ -94,7 +94,7 @@ class DevicesListPage extends ConsumerWidget {
                                 backgroundColor: Colors.red,
                               ),
                             );
-                            ref.refresh(devicesProvider);
+                            ref.invalidate(devicesProvider);
                           }
                         }
                       },
@@ -119,7 +119,7 @@ class DevicesListPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => ref.refresh(devicesProvider),
+                  onPressed: () => ref.invalidate(devicesProvider),
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF173518)),
                   child: const Text('Tentar Novamente', style: TextStyle(color: Colors.white)),
                 ),

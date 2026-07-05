@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../data/datasources/irrigation_remote_datasource.dart';
@@ -72,12 +73,12 @@ class IrrigationController extends StateNotifier<AsyncValue<IrrigationCommandMod
         if (command.status != IrrigationStatus.pending) {
           _stopPolling();
           state = AsyncValue.data(command);
-          print('DEBUG_POLLING: Status final recebido: ${command.status}. Polling parado.');
+          debugPrint('DEBUG_POLLING: Status final recebido: ${command.status}. Polling parado.');
         } else {
           state = AsyncValue.data(command);
         }
       } catch (e) {
-        print('DEBUG_POLLING: Erro na consulta: $e');
+        debugPrint('DEBUG_POLLING: Erro na consulta: $e');
         // Se der erro de rede, não paramos o polling ainda, apenas logamos
       }
     });
