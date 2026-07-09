@@ -21,6 +21,7 @@ class RouteGuard {
     // Se o status for "sem dispositivos", permite apenas telas de setup e auth
     if (status == AuthStatus.authenticatedNoDevices) {
       return route == AppRoutes.qrCodeDevice || 
+             route == AppRoutes.onboarding ||
              route == AppRoutes.addDeviceQrCode || 
              route == AppRoutes.login || 
              route == AppRoutes.register || 

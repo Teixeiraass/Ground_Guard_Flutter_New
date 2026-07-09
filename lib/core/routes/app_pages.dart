@@ -14,6 +14,7 @@ import 'package:ground_guard_app/features/profile/presentation/pages/irrigation_
 import 'package:ground_guard_app/features/support/presentation/pages/support_page.dart';
 import 'package:ground_guard_app/features/support/presentation/pages/terms_and_services_page.dart';
 import 'package:ground_guard_app/features/splash/splash_page.dart';
+import 'package:ground_guard_app/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -46,6 +47,9 @@ class AppPages {
 
       case AppRoutes.devicesList:
         return _slideRoute(const DevicesListPage(), settings);
+
+      case AppRoutes.onboarding:
+        return _slideRoute(const OnboardingPage(), settings);
 
       case AppRoutes.editProfile:
         return _slideRoute(const EditProfilePage(), settings);

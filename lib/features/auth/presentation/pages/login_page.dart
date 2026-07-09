@@ -52,7 +52,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       if (next.status == AuthStatus.authenticated) {
         Navigator.pushReplacementNamed(context, AppRoutes.main);
       } else if (next.status == AuthStatus.authenticatedNoDevices) {
-        Navigator.pushReplacementNamed(context, AppRoutes.qrCodeDevice);
+        Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
       } else if (next.errorMessage != null && next.status == AuthStatus.unauthenticated) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.errorMessage!)),
