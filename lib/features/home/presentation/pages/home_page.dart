@@ -26,7 +26,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final irrigationState = ref.watch(irrigationControllerProvider);
     final rainForecastAsync = ref.watch(rainForecastProvider);
 
-    // Escuta mudanças de estado para mostrar Snackbars
+    // Escuta mudanças de estado para mostrar Snackbars de erro ou timeout
     ref.listen<AsyncValue<IrrigationCommandModel?>>(
       irrigationControllerProvider,
       (prev, next) {
@@ -69,24 +69,21 @@ class _HomePageState extends ConsumerState<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildMainCard(devices),
-                    const SizedBox(height: 28),
-                    _buildDynamicIrrigationButton(devices, irrigationState),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: Text(
-                        irrigationState.maybeWhen(
-                          data: (cmd) => cmd?.status == IrrigationStatus.pending
-                              ? 'Aguardando confirmação do sensor...'
-                              : 'Pressione para iniciar ciclo de 15 min',
-                          orElse: () =>
-                              'Pressione para iniciar ciclo de 15 min',
-                        ),
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 15,
+                    if (_selectedDeviceIndex > 0) ...[
+                      const SizedBox(height: 28),
+                      _buildDynamicIrrigationButton(devices, irrigationState),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: Text(
+                          _getIrrigationSubtitle(devices, irrigationState),
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 15,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 34),
                     _buildZonesTitle(),
                     const SizedBox(height: 20),
@@ -114,83 +111,83 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  String _getIrrigationSubtitle(List<DeviceModel> devices, AsyncValue<IrrigationCommandModel?> state) {
+    if (state.isLoading) return 'Processando comando...';
+    
+    // Verifica se o dispositivo selecionado está irrigando no momento via WebSocket
+    bool isAnyIrrigating = false;
+    if (_selectedDeviceIndex > 0) {
+      isAnyIrrigating = devices[_selectedDeviceIndex - 1].isIrrigating;
+    }
+
+    if (isAnyIrrigating) return 'Irrigação em curso. Clique para parar.';
+    
+    return state.maybeWhen(
+      data: (cmd) => cmd?.status == IrrigationStatus.pending
+          ? 'Aguardando confirmação do sensor...'
+          : 'Pressione para iniciar ciclo de 15 min',
+      orElse: () => 'Pressione para iniciar ciclo de 15 min',
+    );
+  }
+
   Widget _buildDynamicIrrigationButton(
     List<DeviceModel> devices,
     AsyncValue<IrrigationCommandModel?> state,
   ) {
-    String deviceName = 'Jardim';
     String? selectedUuid;
+    bool isIrrigating = false;
 
     if (_selectedDeviceIndex > 0) {
-      deviceName = devices[_selectedDeviceIndex - 1].name;
-      selectedUuid = devices[_selectedDeviceIndex - 1].uuid;
+      final device = devices[_selectedDeviceIndex - 1];
+      selectedUuid = device.uuid;
+      isIrrigating = device.isIrrigating;
     }
 
-    return state.when(
-      data: (command) {
-        final status = command?.status ?? IrrigationStatus.idle;
-
-        if (status == IrrigationStatus.pending) {
-          return _buttonContainer(
-            label: 'Enviando...',
-            icon: Icons.hourglass_empty,
-            color: Colors.grey.shade600,
-            onTap: null,
-          );
-        }
-
-        if (status == IrrigationStatus.success && command?.action == 'START') {
-          return _buttonContainer(
-            label: 'Parar Irrigação',
-            icon: Icons.stop_circle_outlined,
-            color: Colors.red.shade800,
-            onTap: () {
-              if (selectedUuid != null) {
-                ref
-                    .read(irrigationControllerProvider.notifier)
-                    .stopIrrigation(selectedUuid);
-              }
-            },
-          );
-        }
-
-        // Estado inicial / ocioso
-        return _buttonContainer(
-          label: _selectedDeviceIndex == 0
-              ? 'Irrigar Jardim'
-              : 'Irrigar ${deviceName.split(' ')[0]}',
-          icon: Icons.water_drop_outlined,
-          color: const Color(0xFF0B4B16),
-          onTap: () {
-            if (selectedUuid != null) {
-              ref
-                  .read(irrigationControllerProvider.notifier)
-                  .startIrrigation(selectedUuid);
-            } else {
-              // Lógica de "Irrigar Todos" pode ser disparada aqui também se desejar
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Selecione uma zona para irrigar especificamente.',
-                  ),
-                ),
-              );
-            }
-          },
-        );
-      },
-      loading: () => _buttonContainer(
+    // Se estiver carregando um comando manual (clique no botão)
+    if (state.isLoading) {
+      return _buttonContainer(
         label: 'Processando...',
         icon: Icons.sync,
         color: Colors.grey,
         onTap: null,
-      ),
-      error: (err, stack) => _buttonContainer(
-        label: 'Erro de Conexão',
-        icon: Icons.error_outline,
-        color: Colors.red,
-        onTap: () => ref.read(irrigationControllerProvider.notifier).reset(),
-      ),
+      );
+    }
+
+    // Se o WebSocket diz que está irrigando, o botão vira "Parar"
+    if (isIrrigating) {
+      return _buttonContainer(
+        label: 'Parar Irrigação',
+        icon: Icons.stop_circle_outlined,
+        color: Colors.red.shade800,
+        onTap: () {
+          if (selectedUuid != null) {
+            ref.read(irrigationControllerProvider.notifier).stopIrrigation(selectedUuid);
+          }
+        },
+      );
+    }
+
+    // Estado PENDING do comando enviado
+    final command = state.asData?.value;
+    if (command?.status == IrrigationStatus.pending) {
+       return _buttonContainer(
+        label: 'Enviando...',
+        icon: Icons.hourglass_empty,
+        color: Colors.grey.shade600,
+        onTap: null,
+      );
+    }
+
+    // Estado padrão: Irrigar
+    return _buttonContainer(
+      label: 'Irrigar',
+      icon: Icons.water_drop_outlined,
+      color: const Color(0xFF0B4B16),
+      onTap: () {
+        if (selectedUuid != null) {
+          ref.read(irrigationControllerProvider.notifier).startIrrigation(selectedUuid);
+        }
+      },
     );
   }
 
@@ -307,8 +304,11 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Widget _buildMainCard(List<DeviceModel> devices) {
     String cardTitle = 'Jardim\nSaudável';
+    bool isOnline = true;
     if (_selectedDeviceIndex > 0) {
-      cardTitle = devices[_selectedDeviceIndex - 1].name;
+      final device = devices[_selectedDeviceIndex - 1];
+      cardTitle = device.name;
+      isOnline = device.isOnline;
     }
 
     return Container(
@@ -327,14 +327,34 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      cardTitle,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        height: 1.2,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF214225),
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            cardTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              height: 1.2,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF214225),
+                            ),
+                          ),
+                        ),
+                        if (_selectedDeviceIndex > 0) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: isOnline ? Colors.green : Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 12),
                     const Text(
@@ -455,35 +475,32 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildZonesGrid(List<DeviceModel> devices) {
-    return Row(
-      children: [
-        Expanded(
-          child: GardenCard(
-            icon: Icons.grass,
-            title: devices.isNotEmpty ? devices[0].name : 'Zona 1',
-            humidity: '65% Umidade',
-            humidityColor: const Color(0xFFE09B2D),
-            enabled: false,
-            iconBg: const Color(0xFFCDEBC2),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: GardenCard(
-            icon: Icons.yard,
-            title: devices.length > 1 ? devices[1].name : 'Zona 2',
-            humidity: '42% (Seco)',
-            humidityColor: Colors.red,
-            enabled: true,
-            iconBg: const Color(0xFFF8D4D1),
-          ),
-        ),
-      ],
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 1.0, // Quadrado para evitar overflow vertical
+      ),
+      itemCount: devices.length,
+      itemBuilder: (context, index) {
+        final device = devices[index];
+        return GardenCard(
+          icon: Icons.grass,
+          title: device.name,
+          humidity: '${device.isOnline ? "65%" : "--"} Umidade',
+          humidityColor: device.isOnline ? const Color(0xFFE09B2D) : Colors.grey,
+          enabled: device.status.toUpperCase() == 'ATIVO',
+          iconBg: device.isOnline ? const Color(0xFFCDEBC2) : Colors.grey.shade200,
+          isOnline: device.isOnline,
+        );
+      },
     );
   }
 
   Widget _buildWeatherAlert(RainForecastModel rain) {
-    // Prioriza mostrar o dia que tem chuva significativa (> 2mm)
     final bool isRainyToday = rain.rainToday > 2.0;
     final String when = isRainyToday ? 'hoje' : 'amanhã';
     final double volume = isRainyToday ? rain.rainToday : rain.rainTomorrow;
