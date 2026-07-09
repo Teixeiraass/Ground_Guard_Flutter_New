@@ -22,7 +22,17 @@ class DevicesRemoteDataSourceImpl implements DevicesRemoteDataSource {
           'page_size': 10,
         },
       );
-      return response.data as List<dynamic>;
+      
+      // Suporte para retorno direto ou dentro de um objeto 'items'/'data'
+      if (response.data is List) {
+        return response.data as List<dynamic>;
+      } else if (response.data is Map && response.data['items'] != null) {
+        return response.data['items'] as List<dynamic>;
+      } else if (response.data is Map && response.data['data'] != null) {
+        return response.data['data'] as List<dynamic>;
+      }
+      
+      return [];
     } catch (e) {
       rethrow;
     }
