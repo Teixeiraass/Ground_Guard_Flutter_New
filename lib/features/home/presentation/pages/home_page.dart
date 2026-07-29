@@ -18,7 +18,7 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  int _selectedDeviceIndex = 0;
+  String? _selectedDeviceUuid; // Agora usamos o UUID em vez do índice
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +69,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildMainCard(devices),
-                    if (_selectedDeviceIndex > 0) ...[
+                    if (_selectedDeviceUuid != null) ...[
                       const SizedBox(height: 28),
                       _buildDynamicIrrigationButton(devices, irrigationState),
                       const SizedBox(height: 16),
@@ -111,17 +111,23 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  DeviceModel? _getSelectedDevice(List<DeviceModel> devices) {
+    if (_selectedDeviceUuid == null) return null;
+    try {
+      return devices.firstWhere((d) => d.uuid == _selectedDeviceUuid);
+    } catch (_) {
+      return null;
+    }
+  }
+
   String _getIrrigationSubtitle(List<DeviceModel> devices, AsyncValue<IrrigationCommandModel?> state) {
     if (state.isLoading) return 'Processando comando...';
-    
-    // Verifica se o dispositivo selecionado está irrigando no momento via WebSocket
-    bool isAnyIrrigating = false;
-    if (_selectedDeviceIndex > 0) {
-      isAnyIrrigating = devices[_selectedDeviceIndex - 1].isIrrigating;
-    }
+
+    final device = _getSelectedDevice(devices);
+    bool isAnyIrrigating = device?.isIrrigating ?? false;
 
     if (isAnyIrrigating) return 'Irrigação em curso. Clique para parar.';
-    
+
     return state.maybeWhen(
       data: (cmd) => cmd?.status == IrrigationStatus.pending
           ? 'Aguardando confirmação do sensor...'
@@ -134,14 +140,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     List<DeviceModel> devices,
     AsyncValue<IrrigationCommandModel?> state,
   ) {
-    String? selectedUuid;
-    bool isIrrigating = false;
-
-    if (_selectedDeviceIndex > 0) {
-      final device = devices[_selectedDeviceIndex - 1];
-      selectedUuid = device.uuid;
-      isIrrigating = device.isIrrigating;
-    }
+    final device = _getSelectedDevice(devices);
+    String? selectedUuid = device?.uuid;
+    bool isIrrigating = device?.isIrrigating ?? false;
 
     // Se estiver carregando um comando manual (clique no botão)
     if (state.isLoading) {
@@ -234,8 +235,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildDeviceSelector(List<DeviceModel> devices) {
-    final allOptions = ['Visão Geral', ...devices.map((d) => d.name)];
-
     return Container(
       padding: const EdgeInsets.only(top: 10, left: 20, right: 20),
       child: Column(
@@ -264,37 +263,67 @@ class _HomePageState extends ConsumerState<HomePage> {
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             child: Row(
-              children: List.generate(allOptions.length, (index) {
-                final isSelected = _selectedDeviceIndex == index;
-                return Padding(
+              children: [
+                Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: ChoiceChip(
-                    label: Text(allOptions[index]),
-                    selected: isSelected,
+                    label: const Text('Visão Geral'),
+                    selected: _selectedDeviceUuid == null,
                     onSelected: (selected) {
                       if (selected) {
-                        setState(() => _selectedDeviceIndex = index);
+                        setState(() => _selectedDeviceUuid = null);
                         ref.read(irrigationControllerProvider.notifier).reset();
                       }
                     },
                     selectedColor: AppColors.primary,
                     backgroundColor: Colors.white,
                     labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.primary,
+                      color: _selectedDeviceUuid == null ? Colors.white : AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
-                        color: isSelected
+                        color: _selectedDeviceUuid == null
                             ? AppColors.primary
                             : AppColors.outline.withOpacity(0.2),
                       ),
                     ),
                     showCheckmark: false,
                   ),
-                );
-              }),
+                ),
+                ...devices.map((device) {
+                  final isSelected = _selectedDeviceUuid == device.uuid;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: ChoiceChip(
+                      label: Text(device.name),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() => _selectedDeviceUuid = device.uuid);
+                          ref.read(irrigationControllerProvider.notifier).reset();
+                        }
+                      },
+                      selectedColor: AppColors.primary,
+                      backgroundColor: Colors.white,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.outline.withOpacity(0.2),
+                        ),
+                      ),
+                      showCheckmark: false,
+                    ),
+                  );
+                }).toList(),
+              ],
             ),
           ),
         ],
@@ -305,8 +334,9 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _buildMainCard(List<DeviceModel> devices) {
     String cardTitle = 'Jardim\nSaudável';
     bool isOnline = true;
-    if (_selectedDeviceIndex > 0) {
-      final device = devices[_selectedDeviceIndex - 1];
+
+    final device = _getSelectedDevice(devices);
+    if (device != null) {
       cardTitle = device.name;
       isOnline = device.isOnline;
     }
@@ -342,7 +372,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           ),
                         ),
-                        if (_selectedDeviceIndex > 0) ...[
+                        if (_selectedDeviceUuid != null) ...[
                           const SizedBox(width: 8),
                           Container(
                             width: 10,
@@ -393,7 +423,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ],
           ),
           const SizedBox(height: 30),
-          _buildHumidityCircle(),
+          _buildHumidityCircle(devices),
           const SizedBox(height: 34),
           const Row(
             children: [
@@ -419,33 +449,72 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildHumidityCircle() {
-    return Container(
-      width: 170,
-      height: 170,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFF5B041), width: 12),
-      ),
-      child: const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.water_drop_outlined, size: 34, color: Color(0xFF8B5A00)),
-          SizedBox(height: 6),
-          Text(
-            '70%',
-            style: TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF214225),
-            ),
+  Widget _buildHumidityCircle(List<DeviceModel> devices) {
+    double humidityValue = 0.0;
+    String humidityText = '--';
+
+    final device = _getSelectedDevice(devices);
+
+    if (device != null) {
+      if (device.isOnline && device.soilMoisture != null) {
+        humidityValue = device.soilMoisture! / 100.0;
+        humidityText = '${device.soilMoisture}%';
+      }
+    } else if (devices.isNotEmpty) {
+      final onlineDevices = devices.where((d) => d.isOnline && d.soilMoisture != null).toList();
+      if (onlineDevices.isNotEmpty) {
+        final avg = onlineDevices.map((d) => d.soilMoisture!).reduce((a, b) => a + b) / onlineDevices.length;
+        humidityValue = avg / 100.0;
+        humidityText = '${avg.toStringAsFixed(0)}%';
+      }
+    }
+
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeOutCubic,
+      tween: Tween<double>(begin: 0, end: humidityValue),
+      builder: (context, value, child) {
+        return Container(
+          width: 180,
+          height: 180,
+          padding: const EdgeInsets.all(12),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 170,
+                height: 170,
+                child: CustomPaint(
+                  painter: _HumidityPainter(
+                    progress: value,
+                    color: const Color(0xFFF5B041),
+                    backgroundColor: const Color(0xFFE5E6DE),
+                  ),
+                ),
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.water_drop_outlined, size: 34, color: Color(0xFF8B5A00)),
+                  const SizedBox(height: 6),
+                  Text(
+                    humidityText,
+                    style: const TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF214225),
+                    ),
+                  ),
+                  const Text(
+                    'Umidade',
+                    style: TextStyle(fontSize: 18, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ],
           ),
-          Text(
-            'Umidade',
-            style: TextStyle(fontSize: 18, color: Colors.black54),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -487,10 +556,14 @@ class _HomePageState extends ConsumerState<HomePage> {
       itemCount: devices.length,
       itemBuilder: (context, index) {
         final device = devices[index];
+        final String humidityValue = (device.isOnline && device.soilMoisture != null)
+            ? '${device.soilMoisture}%'
+            : '--';
+
         return GardenCard(
           icon: Icons.grass,
           title: device.name,
-          humidity: '${device.isOnline ? "65%" : "--"} Umidade',
+          humidity: '$humidityValue Umidade',
           humidityColor: device.isOnline ? const Color(0xFFE09B2D) : Colors.grey,
           enabled: device.status.toUpperCase() == 'ATIVO',
           iconBg: device.isOnline ? const Color(0xFFCDEBC2) : Colors.grey.shade200,
@@ -546,5 +619,53 @@ class _HomePageState extends ConsumerState<HomePage> {
         ],
       ),
     );
+  }
+}
+
+class _HumidityPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color backgroundColor;
+
+  _HumidityPainter({
+    required this.progress,
+    required this.color,
+    required this.backgroundColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokeWidth = 12.0;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+
+    // Fundo do círculo
+    final backgroundPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, backgroundPaint);
+
+    // Progresso
+    final progressPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -1.5708, // Começa no topo (-90 graus)
+      6.28319 * progress, // 2 * PI * progresso
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HumidityPainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }

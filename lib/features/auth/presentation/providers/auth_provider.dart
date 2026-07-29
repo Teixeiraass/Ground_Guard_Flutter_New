@@ -65,14 +65,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       final hasDevices = await _devicesRepository.hasDevices();
+      if (!mounted) return;
       state = state.copyWith(
         status: hasDevices ? AuthStatus.authenticated : AuthStatus.authenticatedNoDevices,
         user: user,
       );
     } catch (e) {
-      if (state.status != AuthStatus.unauthenticated) {
-        state = state.copyWith(status: AuthStatus.authenticated, user: user);
-      }
+      if (!mounted) return;
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: e.toString(),
+      );
     }
   }
 
@@ -85,14 +88,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final response = await _authRepository.login(email, password);
       final hasDevices = await _devicesRepository.hasDevices();
+      if (!mounted) return;
 
       state = state.copyWith(
         status: hasDevices ? AuthStatus.authenticated : AuthStatus.authenticatedNoDevices,
         user: response.user,
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(
-        status: AuthStatus.unauthenticated,
+        status: AuthStatus.error, // Mudado de unauthenticated para error para podermos diferenciar
         errorMessage: e.toString(),
       );
     }

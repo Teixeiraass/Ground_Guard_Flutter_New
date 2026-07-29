@@ -48,6 +48,9 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       Navigator.pushReplacementNamed(context, AppRoutes.main);
     } else if (authStatus == AuthStatus.authenticatedNoDevices) {
       Navigator.pushReplacementNamed(context, AppRoutes.qrCodeDevice);
+    } else if (authStatus == AuthStatus.error) {
+      // Se deu erro (ex: Servidor Offline), permanecemos na splash para mostrar a mensagem
+      return;
     } else {
       Navigator.pushReplacementNamed(context, AppRoutes.login);
     }
@@ -55,6 +58,8 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -68,16 +73,44 @@ class _SplashPageState extends ConsumerState<SplashPage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 40),
+              padding: const EdgeInsets.only(bottom: 40, left: 24, right: 24),
               child: Column(
                 children: [
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.6,
-                    child: AppLoader(
-                      progress: progress,
-                      label: label,
+                  if (authState.status == AuthStatus.error) ...[
+                    const Icon(
+                      Icons.cloud_off_rounded,
+                      color: Colors.redAccent,
+                      size: 48,
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    Text(
+                      authState.errorMessage ?? 'Não foi possível conectar ao servidor.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          progress = 0;
+                          label = 'Tentando conectar...';
+                        });
+                        _start();
+                      },
+                      child: const Text('Tentar Novamente'),
+                    ),
+                  ] else ...[
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.6,
+                      child: AppLoader(
+                        progress: progress,
+                        label: label,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

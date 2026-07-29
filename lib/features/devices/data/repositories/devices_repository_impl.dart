@@ -51,8 +51,10 @@ class DevicesRepositoryImpl implements DevicesRepository {
     try {
       final devices = await _remoteDataSource.getDevices();
       return devices.isNotEmpty;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
     } catch (e) {
-      return false;
+      rethrow;
     }
   }
 }
