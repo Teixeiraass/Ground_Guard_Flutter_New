@@ -40,16 +40,24 @@ class DevicesNotifier extends StateNotifier<AsyncValue<List<DeviceModel>>> {
     _ref.listen(webSocketMessagesProvider, (previous, next) {
       next.whenData((message) {
         if (message.type == 'device_state') {
-          _updateDeviceState(message.deviceUid, message.isOnline, message.isIrrigating);
+          _updateDeviceState(
+            message.deviceUid, 
+            message.isOnline, 
+            message.isIrrigating, 
+            message.soilMoisture,
+          );
+        } else if (message.type == 'device_telemetry') {
+          _updateDeviceTelemetry(message.deviceUid, message.soilMoisture);
         }
       });
     });
   }
 
-  void _updateDeviceState(String deviceUid, bool isOnline, bool isIrrigating) {
+  void _updateDeviceState(String deviceUid, bool isOnline, bool isIrrigating, int? soilMoisture) {
+    if (!mounted) return;
     state.whenData((devices) {
       final updatedDevices = devices.map((device) {
-        if (device.deviceUid == deviceUid) {
+        if (_compareIds(device.deviceUid, deviceUid)) {
           // Se o status de irrigação mudou para falso, resetamos o controle manual
           if (device.isIrrigating && !isIrrigating) {
             _ref.read(irrigationControllerProvider.notifier).reset();
@@ -58,6 +66,7 @@ class DevicesNotifier extends StateNotifier<AsyncValue<List<DeviceModel>>> {
           return device.copyWith(
             isOnline: isOnline,
             isIrrigating: isIrrigating,
+            soilMoisture: soilMoisture,
           );
         }
         return device;
@@ -66,10 +75,33 @@ class DevicesNotifier extends StateNotifier<AsyncValue<List<DeviceModel>>> {
     });
   }
 
+  void _updateDeviceTelemetry(String deviceUid, int? soilMoisture) {
+    if (!mounted) return;
+    state.whenData((devices) {
+      final updatedDevices = devices.map((device) {
+        if (_compareIds(device.deviceUid, deviceUid)) {
+          return device.copyWith(
+            soilMoisture: soilMoisture,
+            isOnline: true,
+          );
+        }
+        return device;
+      }).toList();
+      state = AsyncValue.data(updatedDevices);
+    });
+  }
+
+  bool _compareIds(String id1, String id2) {
+    final clean1 = id1.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
+    final clean2 = id2.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
+    return clean1 == clean2 && clean1.isNotEmpty;
+  }
+
   Future<void> fetchDevices() async {
     state = const AsyncValue.loading();
     try {
       final devicesData = await _repository.getDevicesList(); 
+      if (!mounted) return;
       state = AsyncValue.data(devicesData);
       
       // Update AuthStatus based on devices count
@@ -79,6 +111,7 @@ class DevicesNotifier extends StateNotifier<AsyncValue<List<DeviceModel>>> {
         _ref.read(authProvider.notifier).updateAuthStatus(AuthStatus.authenticatedNoDevices);
       }
     } catch (e, stack) {
+      if (!mounted) return;
       state = AsyncValue.error(e, stack);
     }
   }

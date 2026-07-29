@@ -3,12 +3,14 @@ class WebSocketMessage {
   final String deviceUid;
   final bool isIrrigating;
   final bool isOnline;
+  final int? soilMoisture;
 
   WebSocketMessage({
     required this.type,
     required this.deviceUid,
     required this.isIrrigating,
     required this.isOnline,
+    this.soilMoisture,
   });
 
   factory WebSocketMessage.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class WebSocketMessage {
       deviceUid: json['device_uid'] ?? '',
       isIrrigating: json['is_irrigating'] ?? false,
       isOnline: json['is_online'] ?? false,
+      soilMoisture: json['soil_moisture'] != null ? (json['soil_moisture'] as num).toInt() : null,
     );
   }
 
@@ -26,6 +29,7 @@ class WebSocketMessage {
       'device_uid': deviceUid,
       'is_irrigating': isIrrigating,
       'is_online': isOnline,
+      'soil_moisture': soilMoisture,
     };
   }
 }
