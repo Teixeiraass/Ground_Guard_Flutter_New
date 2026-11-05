@@ -22,37 +22,40 @@ void main() {
     mockRepository = MockWeatherRepository();
     // Pre-setting the responses as WeatherNotifier calls fetchWeather in constructor
     when(() => mockRepository.getLocalCity()).thenAnswer((_) async => 'London');
-    when(() => mockRepository.getWeather(any())).thenAnswer((_) async => tWeather);
+    when(
+      () => mockRepository.getWeather(any()),
+    ).thenAnswer((_) async => tWeather);
   });
 
   test('initial state should be loading and then data on success', () async {
     final container = ProviderContainer(
-      overrides: [
-        weatherRepositoryProvider.overrideWithValue(mockRepository),
-      ],
+      overrides: [weatherRepositoryProvider.overrideWithValue(mockRepository)],
     );
     addTearDown(container.dispose);
 
     // The notifier calls fetchWeather in constructor
     // Initially it might be loading
-    expect(container.read(weatherProvider), const AsyncValue<WeatherModel>.loading());
+    expect(
+      container.read(weatherProvider),
+      const AsyncValue<WeatherModel>.loading(),
+    );
 
     // Wait for the constructor's fetchWeather to complete
     await container.read(weatherProvider.notifier).fetchWeather('London');
 
     expect(container.read(weatherProvider).value, tWeather);
-    // Verify that it was called twice: once in constructor (with London from getLocalCity) 
+    // Verify that it was called twice: once in constructor (with London from getLocalCity)
     // and once manually (with London)
     verify(() => mockRepository.getWeather('London')).called(2);
   });
 
   test('should set state to error when fetch fails', () async {
-    when(() => mockRepository.getWeather(any())).thenThrow(Exception('Failed to fetch'));
+    when(
+      () => mockRepository.getWeather(any()),
+    ).thenThrow(Exception('Failed to fetch'));
 
     final container = ProviderContainer(
-      overrides: [
-        weatherRepositoryProvider.overrideWithValue(mockRepository),
-      ],
+      overrides: [weatherRepositoryProvider.overrideWithValue(mockRepository)],
     );
     addTearDown(container.dispose);
 

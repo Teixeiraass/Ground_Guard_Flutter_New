@@ -13,16 +13,10 @@ class AuthState {
   final UserModel? user;
   final String? errorMessage;
 
-  const AuthState({
-    required this.status,
-    this.user,
-    this.errorMessage,
-  });
+  const AuthState({required this.status, this.user, this.errorMessage});
 
   factory AuthState.initial() {
-    return const AuthState(
-      status: AuthStatus.loading,
-    );
+    return const AuthState(status: AuthStatus.loading);
   }
 
   AuthState copyWith({

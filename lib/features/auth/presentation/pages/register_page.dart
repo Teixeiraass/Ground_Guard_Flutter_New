@@ -17,6 +17,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -34,13 +35,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final password = _passwordController.text.trim();
 
     if (name.isEmpty || username.isEmpty || email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preencha todos os campos')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Preencha todos os campos')));
       return;
     }
 
-    await ref.read(authProvider.notifier).register(
+    await ref
+        .read(authProvider.notifier)
+        .register(
           username: username,
           fullName: name,
           email: email,
@@ -57,10 +60,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       if (next.status == AuthStatus.authenticated) {
         Navigator.pushReplacementNamed(context, AppRoutes.main);
       } else if (next.status == AuthStatus.authenticatedNoDevices) {
-        Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
-      } else if (next.errorMessage != null && next.status == AuthStatus.unauthenticated) {
+        Navigator.pushReplacementNamed(
+          context,
+          AppRoutes.addControllerBluetooth,
+        );
+      } else if (next.errorMessage != null &&
+          (next.status == AuthStatus.unauthenticated ||
+              next.status == AuthStatus.error)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.errorMessage!)),
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     });
@@ -75,10 +86,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 const SizedBox(height: 42),
                 Column(
                   children: [
-                    Image.asset(
-                      'assets/images/logo.png',
-                      width: 120,
-                    ),
+                    Image.asset('assets/images/logo.png', width: 120),
                     const SizedBox(height: 28),
                     Text(
                       'Comece sua jornada de cultivo inteligente e sustentável hoje mesmo.',
@@ -114,25 +122,58 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     children: [
                       _buildLabel(theme, 'Nome Completo'),
                       const SizedBox(height: 10),
-                      _buildTextField(_nameController, 'Seu nome', Icons.person_outline),
+                      _buildTextField(
+                        _nameController,
+                        'Seu nome',
+                        Icons.person_outline,
+                      ),
                       const SizedBox(height: 20),
                       _buildLabel(theme, 'Usuário'),
                       const SizedBox(height: 10),
-                      _buildTextField(_usernameController, 'ground_guard123', Icons.badge_outlined),
+                      _buildTextField(
+                        _usernameController,
+                        'ground_guard123',
+                        Icons.badge_outlined,
+                      ),
                       const SizedBox(height: 20),
                       _buildLabel(theme, 'Email'),
                       const SizedBox(height: 10),
-                      _buildTextField(_emailController, 'nome@exemplo.com', Icons.mail_outline_rounded, keyboardType: TextInputType.emailAddress),
+                      _buildTextField(
+                        _emailController,
+                        'nome@exemplo.com',
+                        Icons.mail_outline_rounded,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
                       const SizedBox(height: 20),
                       _buildLabel(theme, 'Senha'),
                       const SizedBox(height: 10),
-                      _buildTextField(_passwordController, '••••••••', Icons.lock_outline_rounded, obscure: true),
+                      _buildTextField(
+                        _passwordController,
+                        '••••••••',
+                        Icons.lock_outline_rounded,
+                        obscure: _obscurePassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            color: AppColors.outline,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
                       const SizedBox(height: 28),
                       SizedBox(
                         width: double.infinity,
                         height: 54,
                         child: ElevatedButton(
-                          onPressed: authState.status == AuthStatus.loading ? null : _onRegister,
+                          onPressed: authState.status == AuthStatus.loading
+                              ? null
+                              : _onRegister,
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
                             backgroundColor: AppColors.primary,
@@ -145,14 +186,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
                                       'Criar Conta',
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                     SizedBox(width: 8),
                                     Icon(Icons.arrow_forward_rounded),
@@ -168,7 +215,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   children: [
                     Text(
                       'Já tem uma conta?',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF424840)),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF424840),
+                      ),
                     ),
                     const SizedBox(height: 14),
                     SizedBox(
@@ -176,15 +225,26 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       height: 52,
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            AppRoutes.login,
+                            (route) => false,
+                          );
                         },
                         style: OutlinedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           foregroundColor: const Color(0xFF173518),
-                          side: BorderSide(color: const Color(0xFF173518).withOpacity(0.25)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                          side: BorderSide(
+                            color: const Color(0xFF173518).withOpacity(0.25),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
-                        child: const Text('Entrar', style: TextStyle(fontWeight: FontWeight.w700)),
+                        child: const Text(
+                          'Entrar',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ),
                   ],
@@ -201,11 +261,21 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Widget _buildLabel(ThemeData theme, String text) {
     return Text(
       text,
-      style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF424840)),
+      style: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFF424840),
+      ),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, {bool obscure = false, TextInputType? keyboardType}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint,
+    IconData icon, {
+    bool obscure = false,
+    TextInputType? keyboardType,
+    Widget? suffixIcon,
+  }) {
     return TextField(
       controller: controller,
       obscureText: obscure,
@@ -213,9 +283,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: Icon(icon, color: AppColors.outline),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.white.withOpacity(0.8),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
         contentPadding: const EdgeInsets.symmetric(vertical: 18),
       ),
     );

@@ -23,9 +23,9 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
-  Future<void> updateUserName(String uuid, String fullName) async {
+  Future<void> updateUserName(String fullName) async {
     try {
-      await _remoteDataSource.updateUserName(uuid, fullName);
+      await _remoteDataSource.updateUserName(fullName);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
@@ -35,6 +35,36 @@ class UserRepositoryImpl implements UserRepository {
   Future<void> updateProfileImage(String filePath) async {
     try {
       await _remoteDataSource.updateProfileImage(filePath);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  @override
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      await _remoteDataSource.changePassword(currentPassword, newPassword);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  @override
+  Future<void> deleteAccount(String password) async {
+    try {
+      await _remoteDataSource.deleteAccount(password);
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  @override
+  Future<void> resendVerificationEmail() async {
+    try {
+      await _remoteDataSource.resendVerificationEmail();
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

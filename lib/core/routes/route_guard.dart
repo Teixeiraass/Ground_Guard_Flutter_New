@@ -9,7 +9,7 @@ class RouteGuard {
       return AppRoutes.main;
     }
     if (authStatus == AuthStatus.authenticatedNoDevices) {
-      return AppRoutes.qrCodeDevice;
+      return AppRoutes.addControllerBluetooth;
     }
     return AppRoutes.login;
   }
@@ -18,14 +18,15 @@ class RouteGuard {
     // Permite navegação se estiver carregando para evitar o "Acesso Negado" momentâneo
     if (status == AuthStatus.loading) return true;
 
-    // Se o status for "sem dispositivos", permite apenas telas de setup e auth
+    // Se o status for "sem dispositivos/controladoras", permite apenas telas de setup e auth
     if (status == AuthStatus.authenticatedNoDevices) {
-      return route == AppRoutes.qrCodeDevice || 
-             route == AppRoutes.onboarding ||
-             route == AppRoutes.addDeviceQrCode || 
-             route == AppRoutes.login || 
-             route == AppRoutes.register || 
-             route == AppRoutes.splash;
+      return route == AppRoutes.addControllerBluetooth ||
+          route == AppRoutes.qrCodeDevice ||
+          route == AppRoutes.onboarding ||
+          route == AppRoutes.addDeviceQrCode ||
+          route == AppRoutes.login ||
+          route == AppRoutes.register ||
+          route == AppRoutes.splash;
     }
 
     // Bloqueia acesso à Home se não estiver logado

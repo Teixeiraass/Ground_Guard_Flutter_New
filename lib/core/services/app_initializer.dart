@@ -1,6 +1,5 @@
 class AppInitializer {
   static Future<void> initialize(Function(double, String) onProgress) async {
-
     await Future.delayed(const Duration(milliseconds: 500));
     onProgress(0.3, 'Carregando configurações...');
 

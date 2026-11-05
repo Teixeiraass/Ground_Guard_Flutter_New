@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ground_guard_app/core/routes/app_routes.dart';
 import 'package:ground_guard_app/core/theme/app_colors.dart';
+import 'package:ground_guard_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:ground_guard_app/features/user/data/models/user_model.dart';
 import 'package:ground_guard_app/features/user/presentation/providers/user_provider.dart';
 import 'package:ground_guard_app/components/user_avatar.dart';
@@ -15,11 +17,7 @@ class EditProfilePage extends ConsumerStatefulWidget {
 
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  int _irrigationDuration = 15;
-  bool _isCelsius = true;
-  bool _obscurePassword = true;
+  bool _resendingVerification = false;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -43,27 +41,108 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     }
   }
 
+  Future<void> _resendVerificationEmail() async {
+    setState(() => _resendingVerification = true);
+    try {
+      await ref.read(userProvider.notifier).resendVerificationEmail();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email de verificação reenviado. Confira sua caixa de entrada.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao reenviar email: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _resendingVerification = false);
+    }
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final passwordController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir conta'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Essa ação não pode ser desfeita. Digite sua senha para confirmar.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Senha',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    if (passwordController.text.isEmpty) return;
+
+    try {
+      await ref
+          .read(userProvider.notifier)
+          .deleteAccount(passwordController.text);
+
+      if (!mounted) return;
+      await ref.read(authProvider.notifier).logout();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.login,
+        (route) => false,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Não foi possível excluir a conta: $e')),
+        );
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    // Use addPostFrameCallback to ensure provider is available if needed, 
-    // but read inside initState is generally okay for initial values.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-       final user = ref.read(userProvider).value;
-       if (user != null && mounted) {
-         setState(() {
-           _nameController.text = user.fullName;
-           _emailController.text = user.email;
-         });
-       }
+      final user = ref.read(userProvider).value;
+      if (user != null && mounted) {
+        setState(() {
+          _nameController.text = user.fullName;
+        });
+      }
     });
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
@@ -81,55 +160,34 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         title: const Text('Editar Perfil'),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            _buildProfileImage(user),
-            const SizedBox(height: 32),
-            _buildTextField(
-              label: 'Nome Completo',
-              controller: _nameController,
-              icon: Icons.person_outline,
-            ),
-            const SizedBox(height: 20),
-            _buildTextField(
-              label: 'E-mail',
-              controller: _emailController,
-              icon: Icons.mail_outline,
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 20),
-            _buildTextField(
-              label: 'Senha',
-              controller: _passwordController,
-              icon: Icons.lock_outline,
-              obscure: _obscurePassword,
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                  color: Colors.grey,
-                ),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-              ),
-            ),
-            const SizedBox(height: 32),
-            _buildGardenPreferences(),
-            const SizedBox(height: 42),
-            _buildSaveButton(user),
-            const SizedBox(height: 24),
-            TextButton(
-              onPressed: () {},
-              child: const Text(
-                'Excluir Conta',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              _buildProfileImage(user),
+              const SizedBox(height: 32),
+              _buildNameField(),
+              const SizedBox(height: 20),
+              _buildEmailDisplay(user),
+              const SizedBox(height: 20),
+              _buildChangePasswordButton(),
+              const SizedBox(height: 42),
+              _buildSaveButton(user),
+              const SizedBox(height: 24),
+              TextButton(
+                onPressed: _confirmDeleteAccount,
+                child: const Text(
+                  'Excluir Conta',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -142,10 +200,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           onTap: _pickImage,
           child: Stack(
             children: [
-              UserAvatar(
-                user: user,
-                radius: 60,
-              ),
+              UserAvatar(user: user, radius: 60),
               Positioned(
                 bottom: 0,
                 right: 0,
@@ -176,32 +231,22 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
-  Widget _buildTextField({
-    required String label,
-    required TextEditingController controller,
-    required IconData icon,
-    bool obscure = false,
-    Widget? suffixIcon,
-    TextInputType? keyboardType,
-  }) {
+  Widget _buildNameField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
+        const Text(
+          'Nome Completo',
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Color(0xFF424840),
           ),
         ),
         const SizedBox(height: 8),
         TextField(
-          controller: controller,
-          obscureText: obscure,
-          keyboardType: keyboardType,
+          controller: _nameController,
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: Colors.grey),
-            suffixIcon: suffixIcon,
+            prefixIcon: const Icon(Icons.person_outline, color: Colors.grey),
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
@@ -214,128 +259,75 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
-  Widget _buildGardenPreferences() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F6),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
+  Widget _buildEmailDisplay(UserModel? user) {
+    final verified = user?.emailVerified ?? false;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'E-mail',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF424840),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
             children: [
-              Icon(Icons.local_florist_outlined, color: AppColors.primary),
-              SizedBox(width: 12),
-              Text(
-                'Preferências de Jardim',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+              const Icon(Icons.mail_outline, color: Colors.grey),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  user?.email ?? '',
+                  style: const TextStyle(color: Color(0xFF424840)),
                 ),
               ),
+              if (verified)
+                const Icon(Icons.verified, color: AppColors.success, size: 20)
+              else
+                _resendingVerification
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : TextButton(
+                        onPressed: _resendVerificationEmail,
+                        child: const Text('Verificar'),
+                      ),
             ],
           ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Duração da Irrigação',
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    Text(
-                      'Tempo padrão por ciclo',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEEEE9),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove),
-                      onPressed: () => setState(() => _irrigationDuration = (_irrigationDuration > 1 ? _irrigationDuration - 1 : 1)),
-                    ),
-                    Text(
-                      '$_irrigationDuration\nmin',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle, color: AppColors.primary),
-                      onPressed: () => setState(() => _irrigationDuration++),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+        ),
+        if (!verified)
+          const Padding(
+            padding: EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              'Email não verificado',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
           ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Unidade de Medida',
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    Text(
-                      'Temperatura e solo',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEEEE9),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Row(
-                  children: [
-                    _buildUnitOption('Celsius', _isCelsius),
-                    _buildUnitOption('Fahr.', !_isCelsius),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      ],
     );
   }
 
-  Widget _buildUnitOption(String label, bool isSelected) {
-    return GestureDetector(
-      onTap: () => setState(() => _isCelsius = label == 'Celsius'),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey,
-            fontWeight: FontWeight.bold,
-          ),
+  Widget _buildChangePasswordButton() {
+    return OutlinedButton.icon(
+      onPressed: () => Navigator.pushNamed(context, AppRoutes.changePassword),
+      icon: const Icon(Icons.lock_outline),
+      label: const Text('Alterar senha'),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 48),
+        foregroundColor: AppColors.primary,
+        side: const BorderSide(color: AppColors.primary),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );
@@ -348,7 +340,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       child: ElevatedButton.icon(
         onPressed: () async {
           if (user == null) return;
-          
+
           final newName = _nameController.text.trim();
           if (newName.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -358,7 +350,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           }
 
           try {
-            await ref.read(userProvider.notifier).updateName(user.uuid, newName);
+            await ref.read(userProvider.notifier).updateName(newName);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Perfil atualizado com sucesso!')),

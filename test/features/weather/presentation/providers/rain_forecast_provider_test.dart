@@ -17,27 +17,31 @@ void main() {
   final tForecastList = [
     {
       'dt': now.millisecondsSinceEpoch ~/ 1000,
-      'rain': {'3h': 1.0}
+      'rain': {'3h': 1.0},
     },
     {
       'dt': now.add(const Duration(days: 1)).millisecondsSinceEpoch ~/ 1000,
-      'rain': {'3h': 3.0}
-    }
+      'rain': {'3h': 3.0},
+    },
   ];
 
   test('should calculate rain correctly for today and tomorrow', () async {
-    when(() => mockRepository.getLocalCity()).thenAnswer((_) async => 'Varginha');
-    when(() => mockRepository.getForecast(any())).thenAnswer((_) async => tForecastList);
+    when(
+      () => mockRepository.getLocalCity(),
+    ).thenAnswer((_) async => 'Varginha');
+    when(
+      () => mockRepository.getForecast(any()),
+    ).thenAnswer((_) async => tForecastList);
 
     final container = ProviderContainer(
-      overrides: [
-        weatherRepositoryProvider.overrideWithValue(mockRepository),
-      ],
+      overrides: [weatherRepositoryProvider.overrideWithValue(mockRepository)],
     );
     addTearDown(container.dispose);
 
     // Trigger fetch
-    await container.read(rainForecastProvider.notifier).fetchRainForecast('Varginha');
+    await container
+        .read(rainForecastProvider.notifier)
+        .fetchRainForecast('Varginha');
 
     final state = container.read(rainForecastProvider);
     expect(state.value?.rainToday, 1.0);
@@ -49,25 +53,29 @@ void main() {
     final tLightForecastList = [
       {
         'dt': now.millisecondsSinceEpoch ~/ 1000,
-        'rain': {'3h': 0.5}
+        'rain': {'3h': 0.5},
       },
       {
         'dt': now.add(const Duration(days: 1)).millisecondsSinceEpoch ~/ 1000,
-        'rain': {'3h': 1.5}
-      }
+        'rain': {'3h': 1.5},
+      },
     ];
 
-    when(() => mockRepository.getLocalCity()).thenAnswer((_) async => 'Varginha');
-    when(() => mockRepository.getForecast(any())).thenAnswer((_) async => tLightForecastList);
+    when(
+      () => mockRepository.getLocalCity(),
+    ).thenAnswer((_) async => 'Varginha');
+    when(
+      () => mockRepository.getForecast(any()),
+    ).thenAnswer((_) async => tLightForecastList);
 
     final container = ProviderContainer(
-      overrides: [
-        weatherRepositoryProvider.overrideWithValue(mockRepository),
-      ],
+      overrides: [weatherRepositoryProvider.overrideWithValue(mockRepository)],
     );
     addTearDown(container.dispose);
 
-    await container.read(rainForecastProvider.notifier).fetchRainForecast('Varginha');
+    await container
+        .read(rainForecastProvider.notifier)
+        .fetchRainForecast('Varginha');
 
     final state = container.read(rainForecastProvider);
     expect(state.value?.willRain, isFalse);

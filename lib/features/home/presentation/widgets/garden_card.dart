@@ -42,11 +42,7 @@ class GardenCard extends StatelessWidget {
                   color: iconBg,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: const Color(0xFF214225),
-                ),
+                child: Icon(icon, size: 20, color: const Color(0xFF214225)),
               ),
               Container(
                 width: 10,
@@ -88,15 +84,12 @@ class GardenCard extends StatelessWidget {
                   humidity,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                 ),
               ),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

@@ -14,13 +14,13 @@ void main() {
     createdAt: DateTime.now(),
   );
 
-  testWidgets('should show initials when userImage is null', (WidgetTester tester) async {
+  testWidgets('should show initials when userImage is null', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
-          home: Scaffold(
-            body: UserAvatar(user: tUser),
-          ),
+          home: Scaffold(body: UserAvatar(user: tUser)),
         ),
       ),
     );
@@ -28,14 +28,12 @@ void main() {
     expect(find.text('TU'), findsOneWidget);
   });
 
-  testWidgets('should show question mark when user is null', (WidgetTester tester) async {
+  testWidgets('should show question mark when user is null', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       const ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: UserAvatar(user: null),
-          ),
-        ),
+        child: MaterialApp(home: Scaffold(body: UserAvatar(user: null))),
       ),
     );
 

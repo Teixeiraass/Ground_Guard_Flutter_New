@@ -10,10 +10,12 @@ class IrrigationPreferencesPage extends ConsumerStatefulWidget {
   const IrrigationPreferencesPage({super.key});
 
   @override
-  ConsumerState<IrrigationPreferencesPage> createState() => _IrrigationPreferencesPageState();
+  ConsumerState<IrrigationPreferencesPage> createState() =>
+      _IrrigationPreferencesPageState();
 }
 
-class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreferencesPage> {
+class _IrrigationPreferencesPageState
+    extends ConsumerState<IrrigationPreferencesPage> {
   int _selectedDeviceIndex = 0;
   final TextEditingController _waitTimeController = TextEditingController();
   final FocusNode _waitTimeFocusNode = FocusNode();
@@ -28,7 +30,7 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
   @override
   Widget build(BuildContext context) {
     final devicesAsync = ref.watch(devicesProvider);
-    
+
     String selectedDeviceUuid = '';
     if (_selectedDeviceIndex > 0) {
       devicesAsync.whenData((devices) {
@@ -38,7 +40,9 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
       });
     }
 
-    final preferenceAsync = ref.watch(irrigationPreferenceProvider(selectedDeviceUuid));
+    final preferenceAsync = ref.watch(
+      irrigationPreferenceProvider(selectedDeviceUuid),
+    );
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -65,45 +69,61 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
                 preferenceAsync.when(
                   data: (pref) {
                     // Sync wait time controller with backend value only if not focused
-                    if (_waitTimeController.text != pref.dryTimeMinutes.toString() && !_waitTimeFocusNode.hasFocus) {
+                    if (_waitTimeController.text !=
+                            pref.dryTimeMinutes.toString() &&
+                        !_waitTimeFocusNode.hasFocus) {
                       _waitTimeController.text = pref.dryTimeMinutes.toString();
                     }
 
                     return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionTitle(Icons.timer_outlined, 'Tempo de Irrigação'),
-                      const SizedBox(height: 16),
-                      _buildDurationCard(pref, selectedDeviceUuid),
-                      const SizedBox(height: 32),
-                      _buildSectionTitle(Icons.water_drop_outlined, 'Limite Diário de Água'),
-                      const SizedBox(height: 16),
-                      _buildLimitCard(pref, selectedDeviceUuid),
-                      const SizedBox(height: 32),
-                      _buildSectionTitle(Icons.auto_fix_high_outlined, 'Automação Inteligente'),
-                      const SizedBox(height: 16),
-                      _buildAutomationCard(pref, selectedDeviceUuid),
-                      const SizedBox(height: 16),
-                      _buildWaitTimeCard(pref, selectedDeviceUuid),
-                      const SizedBox(height: 42),
-                      _buildSaveButton(pref, selectedDeviceUuid),
-                    ],
-                  );
-                },
-                loading: () => const Center(child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(),
-                )),
-                error: (err, stack) => Center(child: Text('Erro ao carregar preferências: $err')),
-              ),
-              const SizedBox(height: 24),
-            ],
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionTitle(
+                          Icons.timer_outlined,
+                          'Tempo de Irrigação',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDurationCard(pref, selectedDeviceUuid),
+                        const SizedBox(height: 32),
+                        _buildSectionTitle(
+                          Icons.water_drop_outlined,
+                          'Limite Diário de Água',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildLimitCard(pref, selectedDeviceUuid),
+                        const SizedBox(height: 32),
+                        _buildSectionTitle(
+                          Icons.auto_fix_high_outlined,
+                          'Automação Inteligente',
+                        ),
+                        const SizedBox(height: 16),
+                        _buildAutomationCard(pref, selectedDeviceUuid),
+                        const SizedBox(height: 16),
+                        _buildWaitTimeCard(pref, selectedDeviceUuid),
+                        const SizedBox(height: 42),
+                        _buildSaveButton(pref, selectedDeviceUuid),
+                      ],
+                    );
+                  },
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(40.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  error: (err, stack) => Center(
+                    child: Text('Erro ao carregar preferências: $err'),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) =>
+              Center(child: Text('Erro ao carregar preferências: $err')),
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Erro ao carregar preferências: $err')),
       ),
-    ),
     );
   }
 
@@ -114,15 +134,19 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
       children: [
         Row(
           children: [
-            const Icon(Icons.local_florist_outlined, size: 18, color: AppColors.primary),
+            const Icon(
+              Icons.local_florist_outlined,
+              size: 18,
+              color: AppColors.primary,
+            ),
             const SizedBox(width: 8),
             Text(
               'SELECIONAR DISPOSITIVO',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    letterSpacing: 1.1,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary.withOpacity(0.7),
-                  ),
+                letterSpacing: 1.1,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary.withOpacity(0.7),
+              ),
             ),
           ],
         ),
@@ -155,7 +179,9 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                     side: BorderSide(
-                      color: isSelected ? AppColors.primary : AppColors.outline.withOpacity(0.2),
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.outline.withOpacity(0.2),
                     ),
                   ),
                   showCheckmark: false,
@@ -273,24 +299,42 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
                   IconButton(
                     icon: const Icon(Icons.remove),
                     onPressed: () {
-                       final updated = pref.toJson();
-                       int newSec = pref.irrigationDurationSeconds - 60;
-                       updated['irrigation_duration_seconds'] = newSec < 0 ? 0 : newSec;
-                       ref.read(irrigationPreferenceProvider(deviceUuid).notifier).updateLocalPreference(IrrigationPreferenceModel.fromJson(updated));
+                      final updated = pref.toJson();
+                      int newSec = pref.irrigationDurationSeconds - 60;
+                      updated['irrigation_duration_seconds'] = newSec < 0
+                          ? 0
+                          : newSec;
+                      ref
+                          .read(
+                            irrigationPreferenceProvider(deviceUuid).notifier,
+                          )
+                          .updateLocalPreference(
+                            IrrigationPreferenceModel.fromJson(updated),
+                          );
                     },
                   ),
                   const SizedBox(width: 8),
                   Text(
                     '$durationMin min',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
                     icon: const Icon(Icons.add, color: AppColors.primary),
                     onPressed: () {
-                       final updated = pref.toJson();
-                       updated['irrigation_duration_seconds'] = pref.irrigationDurationSeconds + 60;
-                       ref.read(irrigationPreferenceProvider(deviceUuid).notifier).updateLocalPreference(IrrigationPreferenceModel.fromJson(updated));
+                      final updated = pref.toJson();
+                      updated['irrigation_duration_seconds'] =
+                          pref.irrigationDurationSeconds + 60;
+                      ref
+                          .read(
+                            irrigationPreferenceProvider(deviceUuid).notifier,
+                          )
+                          .updateLocalPreference(
+                            IrrigationPreferenceModel.fromJson(updated),
+                          );
                     },
                   ),
                 ],
@@ -320,7 +364,10 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
               ),
               Text(
                 '${pref.maxIrrigationsPerDay}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
             ],
           ),
@@ -341,7 +388,11 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
               onChanged: (value) {
                 final updated = pref.toJson();
                 updated['max_irrigations_per_day'] = value.toInt();
-                ref.read(irrigationPreferenceProvider(deviceUuid).notifier).updateLocalPreference(IrrigationPreferenceModel.fromJson(updated));
+                ref
+                    .read(irrigationPreferenceProvider(deviceUuid).notifier)
+                    .updateLocalPreference(
+                      IrrigationPreferenceModel.fromJson(updated),
+                    );
               },
             ),
           ),
@@ -360,7 +411,10 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
     );
   }
 
-  Widget _buildAutomationCard(IrrigationPreferenceModel pref, String deviceUuid) {
+  Widget _buildAutomationCard(
+    IrrigationPreferenceModel pref,
+    String deviceUuid,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -387,7 +441,9 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  pref.irrigationMode == 'INTELIGENTE' ? 'Baseado na umidade do dispositivo' : 'Modo Manual',
+                  pref.irrigationMode == 'INTELIGENTE'
+                      ? 'Baseado na umidade do dispositivo'
+                      : 'Modo Manual',
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
@@ -400,7 +456,11 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
               updated['enabled'] = value;
               // Set mode to MANUAL if disabled, INTELIGENTE if enabled as per your rule
               updated['irrigation_mode'] = value ? 'INTELIGENTE' : 'MANUAL';
-              ref.read(irrigationPreferenceProvider(deviceUuid).notifier).updateLocalPreference(IrrigationPreferenceModel.fromJson(updated));
+              ref
+                  .read(irrigationPreferenceProvider(deviceUuid).notifier)
+                  .updateLocalPreference(
+                    IrrigationPreferenceModel.fromJson(updated),
+                  );
             },
             activeColor: Colors.white,
             activeTrackColor: AppColors.primary,
@@ -433,7 +493,11 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
           const SizedBox(height: 12),
           Text(
             'Tempo que o solo deve permanecer seco nesta zona antes de disparar o ciclo.',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.4),
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 20),
           Container(
@@ -453,10 +517,16 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
                     textInputAction: TextInputAction.done,
                     style: const TextStyle(fontWeight: FontWeight.w500),
                     onChanged: (value) {
-                       final minutes = int.tryParse(value) ?? 0;
-                       final updated = pref.toJson();
-                       updated['dry_time_minutes'] = minutes;
-                       ref.read(irrigationPreferenceProvider(deviceUuid).notifier).updateLocalPreference(IrrigationPreferenceModel.fromJson(updated));
+                      final minutes = int.tryParse(value) ?? 0;
+                      final updated = pref.toJson();
+                      updated['dry_time_minutes'] = minutes;
+                      ref
+                          .read(
+                            irrigationPreferenceProvider(deviceUuid).notifier,
+                          )
+                          .updateLocalPreference(
+                            IrrigationPreferenceModel.fromJson(updated),
+                          );
                     },
                     decoration: const InputDecoration(
                       filled: false,
@@ -484,16 +554,22 @@ class _IrrigationPreferencesPageState extends ConsumerState<IrrigationPreference
         onPressed: () async {
           if (deviceUuid.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Selecione um dispositivo para salvar.')),
+              const SnackBar(
+                content: Text('Selecione um dispositivo para salvar.'),
+              ),
             );
             return;
           }
 
           try {
-            await ref.read(irrigationPreferenceProvider(deviceUuid).notifier).savePreference(pref);
+            await ref
+                .read(irrigationPreferenceProvider(deviceUuid).notifier)
+                .savePreference(pref);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Preferências salvas com sucesso!')),
+                const SnackBar(
+                  content: Text('Preferências salvas com sucesso!'),
+                ),
               );
               Navigator.pop(context);
             }

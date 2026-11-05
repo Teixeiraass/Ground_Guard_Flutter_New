@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../../../core/device/device_metadata_service.dart';
 import '../models/login_request.dart';
 import '../models/login_response.dart';
 
@@ -7,7 +8,12 @@ abstract class AuthRemoteDataSource {
   Future<void> register(Map<String, dynamic> userData);
   Future<String> refreshToken(String refreshToken);
   Future<void> logout(String sessionId);
-  Future<LoginResponse> oauthLogin(String provider, String idToken);
+  Future<LoginResponse> oauthLogin(
+    String provider,
+    String idToken, {
+    DeviceMetadata device = DeviceMetadata.empty,
+  });
+  Future<void> requestPasswordReset(String email);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -18,10 +24,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<LoginResponse> login(LoginRequest request) async {
     try {
-      final response = await _dio.post(
-        '/users/login',
-        data: request.toJson(),
-      );
+      final response = await _dio.post('/users/login', data: request.toJson());
       return LoginResponse.fromJson(response.data);
     } catch (e) {
       rethrow;
@@ -29,11 +32,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<LoginResponse> oauthLogin(String provider, String idToken) async {
+  Future<LoginResponse> oauthLogin(
+    String provider,
+    String idToken, {
+    DeviceMetadata device = DeviceMetadata.empty,
+  }) async {
     try {
       final response = await _dio.post(
         '/users/oauth/$provider',
-        data: {'id_token': idToken},
+        data: {'id_token': idToken, ...device.toJson()},
       );
       return LoginResponse.fromJson(response.data);
     } catch (e) {
@@ -44,10 +51,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> register(Map<String, dynamic> userData) async {
     try {
-      await _dio.post(
-        '/users',
-        data: userData,
-      );
+      await _dio.post('/users', data: userData);
     } catch (e) {
       rethrow;
     }
@@ -69,10 +73,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> logout(String sessionId) async {
     try {
-      await _dio.post(
-        '/users/logout',
-        data: {'session_id': sessionId},
-      );
+      await _dio.post('/users/logout', data: {'session_id': sessionId});
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> requestPasswordReset(String email) async {
+    try {
+      await _dio.post('/password-reset/request', data: {'email': email});
     } catch (e) {
       rethrow;
     }

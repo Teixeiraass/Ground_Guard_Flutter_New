@@ -4,6 +4,7 @@ import '../models/login_request.dart';
 import '../models/login_response.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/device/device_metadata_service.dart';
 import 'package:dio/dio.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -14,14 +15,19 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<LoginResponse> login(String email, String password) async {
     try {
-      final request = LoginRequest(email: email, password: password);
+      final device = await DeviceMetadataService.collect();
+      final request = LoginRequest(
+        email: email,
+        password: password,
+        device: device,
+      );
       final response = await _remoteDataSource.login(request);
-      
+
       await SecureStorageService.saveAccessToken(response.accessToken);
       await SecureStorageService.saveRefreshToken(response.refreshToken);
       await SecureStorageService.saveSessionId(response.sessionId);
       await SecureStorageService.saveUser(response.user);
-      
+
       return response;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
@@ -72,7 +78,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<bool> hasDevices() async {
-    // This could be moved to a DevicesRepository if appropriate, 
+    // This could be moved to a DevicesRepository if appropriate,
     // but adding it here as per the interface requirement.
     return false; // Default or actual implementation
   }
@@ -80,7 +86,12 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<LoginResponse> oauthLogin(String provider, String idToken) async {
     try {
-      final response = await _remoteDataSource.oauthLogin(provider, idToken);
+      final device = await DeviceMetadataService.collect();
+      final response = await _remoteDataSource.oauthLogin(
+        provider,
+        idToken,
+        device: device,
+      );
 
       await SecureStorageService.saveAccessToken(response.accessToken);
       await SecureStorageService.saveRefreshToken(response.refreshToken);
@@ -88,6 +99,15 @@ class AuthRepositoryImpl implements AuthRepository {
       await SecureStorageService.saveUser(response.user);
 
       return response;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
+
+  @override
+  Future<void> requestPasswordReset(String email) async {
+    try {
+      await _remoteDataSource.requestPasswordReset(email);
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

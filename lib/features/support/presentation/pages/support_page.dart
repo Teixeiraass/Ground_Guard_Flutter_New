@@ -1,10 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/device/device_metadata_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../help_categories.dart';
 
 import 'package:ground_guard_app/core/routes/app_routes.dart';
 
+const _supportEmail = 'contato@ground_guard.com';
+
 class SupportPage extends StatelessWidget {
   const SupportPage({super.key});
+
+  Future<void> _openEmail(BuildContext context) async {
+    final device = await DeviceMetadataService.collect();
+    final body =
+        '\n\n\n---\n'
+        'Versão do app: ${device.appVersion}\n'
+        'Aparelho: ${device.deviceModel} (${device.platform} ${device.osVersion})';
+
+    // Encoded by hand: queryParameters would turn spaces into "+",
+    // which mail apps show literally.
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _supportEmail,
+      query:
+          'subject=${Uri.encodeComponent('Suporte Ground Guard')}'
+          '&body=${Uri.encodeComponent(body)}',
+    );
+
+    final opened = await launchUrl(uri).catchError((_) => false);
+    if (opened || !context.mounted) return;
+
+    await Clipboard.setData(const ClipboardData(text: _supportEmail));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Nenhum app de e-mail encontrado. Copiamos $_supportEmail para você.',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,36 +77,14 @@ class SupportPage extends StatelessWidget {
               mainAxisSpacing: 16,
               childAspectRatio: 1.1,
               children: [
-                _buildCategoryCard(
-                  'Primeiros Passos',
-                  Icons.rocket_launch_outlined,
-                  const Color(0xFFE8F5E9),
-                  const Color(0xFF2E7D32),
-                ),
-                _buildCategoryCard(
-                  'Conectividade IOT',
-                  Icons.router_outlined,
-                  const Color(0xFFFFF3E0),
-                  const Color(0xFFEF6C00),
-                ),
-                _buildCategoryCard(
-                  'Configuração de Rega',
-                  Icons.water_drop_outlined,
-                  const Color(0xFFE1F5FE),
-                  const Color(0xFF0277BD),
-                ),
-                _buildCategoryCard(
-                  'Conta e Privacidade',
-                  Icons.shield_outlined,
-                  const Color(0xFFFFEBEE),
-                  const Color(0xFFC62828),
-                ),
+                for (final category in HelpCategory.all)
+                  _buildCategoryCard(context, category),
               ],
             ),
             const SizedBox(height: 32),
             _buildTermsItem(context),
             const SizedBox(height: 32),
-            _buildCommunityCard(),
+            _buildCommunityCard(context),
             const SizedBox(height: 32),
             const Text(
               'Fale Conosco',
@@ -82,10 +97,11 @@ class SupportPage extends StatelessWidget {
             const SizedBox(height: 16),
             _buildContactItem(
               'Chat ao Vivo',
-              'Tempo médio de espera: 2 min',
+              'Fale com nosso time direto pelo app',
               Icons.chat_bubble_outline_rounded,
               const Color(0xFFE8F5E9),
               const Color(0xFF2E7D32),
+              () => Navigator.pushNamed(context, AppRoutes.supportChat),
             ),
             const SizedBox(height: 12),
             _buildContactItem(
@@ -94,14 +110,7 @@ class SupportPage extends StatelessWidget {
               Icons.mail_outline_rounded,
               const Color(0xFFFFF3E0),
               const Color(0xFFEF6C00),
-            ),
-            const SizedBox(height: 12),
-            _buildContactItem(
-              'Ligar para Suporte',
-              'Segunda a Sexta, 08h - 18h',
-              Icons.phone_outlined,
-              const Color(0xFFFFEBEE),
-              const Color(0xFFC62828),
+              () => _openEmail(context),
             ),
             const SizedBox(height: 32),
           ],
@@ -148,7 +157,7 @@ class SupportPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryCard(String title, IconData icon, Color bgColor, Color iconColor) {
+  Widget _buildCategoryCard(BuildContext context, HelpCategory category) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -161,33 +170,48 @@ class SupportPage extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor, size: 28),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () => Navigator.pushNamed(
+            context,
+            AppRoutes.helpCategory,
+            arguments: category,
           ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1D3520),
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: category.background,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  category.icon,
+                  color: category.foreground,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                category.title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1D3520),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildCommunityCard() {
+  Widget _buildCommunityCard(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -231,7 +255,7 @@ class SupportPage extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'Comunidade Guardiã',
+                  'Guia do Guardião',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -242,7 +266,7 @@ class SupportPage extends StatelessWidget {
                 const SizedBox(
                   width: 160,
                   child: Text(
-                    'Junte-se a outros 5.000 usuários e compartilhe dicas sobre seu cultivo.',
+                    'Dicas práticas para um solo saudável e menos desperdício de água.',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
@@ -252,18 +276,25 @@ class SupportPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.helpCategory,
+                    arguments: HelpCategory.tips,
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1B331E),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     minimumSize: Size.zero,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: const Text(
-                    'Explorar Fórum',
+                    'Ver dicas',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -275,55 +306,60 @@ class SupportPage extends StatelessWidget {
     );
   }
 
-  Widget _buildContactItem(String title, String subtitle, IconData icon, Color bgColor, Color iconColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
+  Widget _buildContactItem(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color bgColor,
+    Color iconColor,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1D3520),
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
-          ),
-          const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1D3520),
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+          ],
+        ),
       ),
     );
   }

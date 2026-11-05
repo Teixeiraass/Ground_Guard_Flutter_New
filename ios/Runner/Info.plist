@@ -4,8 +4,16 @@
 	<dict>
 		<key>NSCameraUsageDescription</key>
 		<string>Precisamos da câmera para ler o QR Code do dispositivo.</string>
+		<key>NSBluetoothAlwaysUsageDescription</key>
+		<string>Precisamos do Bluetooth para buscar e configurar sua caixa de comando Ground Guard.</string>
+		<key>NSBluetoothPeripheralUsageDescription</key>
+		<string>Precisamos do Bluetooth para se comunicar com a controladora Ground Guard.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Usamos sua localização apenas para marcar no mapa onde cada sensor está instalado.</string>
 		<key>NSFaceIDUsageDescription</key>
 		<string>Utilizamos o Face ID para autenticar seu acesso de forma segura e rápida.</string>
+		<key>GIDClientID</key>
+		<string>427509502373-vsb46tfei7gfff9b6s1qdljlno1jv9rq.apps.googleusercontent.com</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
@@ -14,7 +22,7 @@
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<!-- Cole seu REVERSED_CLIENT_ID aqui -->
-					<string>com.googleusercontent.apps.SEU_ID_AQUI</string>
+					<string>com.googleusercontent.apps.427509502373-vsb46tfei7gfff9b6s1qdljlno1jv9rq</string>
 				</array>
 			</dict>
 		</array>

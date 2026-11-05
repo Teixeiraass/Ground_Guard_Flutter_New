@@ -12,4 +12,5 @@ abstract class AuthRepository {
   Future<void> logout();
   Future<bool> hasDevices();
   Future<LoginResponse> oauthLogin(String provider, String idToken);
+  Future<void> requestPasswordReset(String email);
 }

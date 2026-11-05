@@ -37,6 +37,7 @@ class AppTheme {
 
     appBarTheme: AppBarTheme(
       backgroundColor: AppColors.background,
+      surfaceTintColor: Colors.transparent, // Impede de mudar de cor no scroll
       elevation: 0,
       centerTitle: false,
       titleTextStyle: GoogleFonts.quicksand(
@@ -44,18 +45,14 @@ class AppTheme {
         fontWeight: FontWeight.w700,
         color: AppColors.onBackground,
       ),
-      iconTheme: const IconThemeData(
-        color: AppColors.primary,
-      ),
+      iconTheme: const IconThemeData(color: AppColors.primary),
     ),
 
     cardTheme: CardThemeData(
       color: AppColors.surfaceContainer,
       elevation: 0,
       margin: const EdgeInsets.all(0),
-      shape: RoundedRectangleBorder(
-        borderRadius: radiusLG,
-      ),
+      shape: RoundedRectangleBorder(borderRadius: radiusLG),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -64,13 +61,8 @@ class AppTheme {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         elevation: 0,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 16,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
         textStyle: GoogleFonts.quicksand(
           fontWeight: FontWeight.w700,
           fontSize: 16,
@@ -83,12 +75,8 @@ class AppTheme {
         minimumSize: const Size(double.infinity, AppSpacing.touchTarget),
         backgroundColor: AppColors.mintAccent.withOpacity(0.25),
         foregroundColor: AppColors.primary,
-        side: BorderSide(
-          color: AppColors.primary.withOpacity(0.15),
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
+        side: BorderSide(color: AppColors.primary.withOpacity(0.15)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
         textStyle: GoogleFonts.quicksand(
           fontWeight: FontWeight.w700,
           fontSize: 16,
@@ -100,10 +88,7 @@ class AppTheme {
       filled: true,
       fillColor: const Color(0xFFF4F4EF),
 
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 18,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
 
       hintStyle: GoogleFonts.quicksand(
         color: AppColors.outline,
@@ -118,17 +103,12 @@ class AppTheme {
 
       enabledBorder: OutlineInputBorder(
         borderRadius: radiusMD,
-        borderSide: BorderSide(
-          color: AppColors.outline.withOpacity(0.1),
-        ),
+        borderSide: BorderSide(color: AppColors.outline.withOpacity(0.1)),
       ),
 
       focusedBorder: OutlineInputBorder(
         borderRadius: radiusMD,
-        borderSide: const BorderSide(
-          color: AppColors.primary,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
     ),
 
@@ -137,13 +117,8 @@ class AppTheme {
       disabledColor: Colors.grey.shade300,
       selectedColor: AppColors.secondaryContainer,
       secondarySelectedColor: AppColors.tertiaryContainer,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(999),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       labelStyle: GoogleFonts.quicksand(
         fontWeight: FontWeight.w700,
         color: AppColors.onSurface,
