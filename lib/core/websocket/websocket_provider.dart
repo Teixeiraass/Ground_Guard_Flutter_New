@@ -6,10 +6,11 @@ import 'websocket_message.dart';
 
 final webSocketServiceProvider = Provider<WebSocketService>((ref) {
   final service = WebSocketService();
-  
+
   // Observa o status de autenticação para conectar/desconectar
   ref.listen(authProvider.select((s) => s.status), (previous, next) {
-    if (next == AuthStatus.authenticated || next == AuthStatus.authenticatedNoDevices) {
+    if (next == AuthStatus.authenticated ||
+        next == AuthStatus.authenticatedNoDevices) {
       service.connect();
     } else if (next == AuthStatus.unauthenticated) {
       service.disconnect();
@@ -18,7 +19,8 @@ final webSocketServiceProvider = Provider<WebSocketService>((ref) {
 
   // Conexão inicial caso já esteja logado
   final currentStatus = ref.read(authProvider).status;
-  if (currentStatus == AuthStatus.authenticated || currentStatus == AuthStatus.authenticatedNoDevices) {
+  if (currentStatus == AuthStatus.authenticated ||
+      currentStatus == AuthStatus.authenticatedNoDevices) {
     service.connect();
   }
 

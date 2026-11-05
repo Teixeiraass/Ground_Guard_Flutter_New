@@ -23,7 +23,9 @@ class TermsAndServicesPage extends ConsumerWidget {
       body: termsAsync.when(
         data: (doc) {
           if (doc == null) {
-            return const Center(child: Text('Nenhum documento de termos encontrado.'));
+            return const Center(
+              child: Text('Nenhum documento de termos encontrado.'),
+            );
           }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
@@ -37,10 +39,7 @@ class TermsAndServicesPage extends ConsumerWidget {
                 Center(
                   child: Text(
                     'Versão: ${doc.version}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -49,7 +48,8 @@ class TermsAndServicesPage extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Erro ao carregar termos: $err')),
+        error: (err, stack) =>
+            Center(child: Text('Erro ao carregar termos: $err')),
       ),
     );
   }
@@ -71,10 +71,7 @@ class TermsAndServicesPage extends ConsumerWidget {
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
-            colors: [
-              Colors.black.withOpacity(0.6),
-              Colors.transparent,
-            ],
+            colors: [Colors.black.withOpacity(0.6), Colors.transparent],
           ),
         ),
         padding: const EdgeInsets.all(20),
@@ -108,21 +105,26 @@ class TermsAndServicesPage extends ConsumerWidget {
 
   Widget _buildDynamicContent(String content) {
     // Split content by '#' to identify headers and sections
-    final sections = content.split('#').where((s) => s.trim().isNotEmpty).toList();
-    
+    final sections = content
+        .split('#')
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
+
     return Column(
       children: sections.map((section) {
         final lines = section.trim().split('\n');
         final title = lines[0].trim();
         final body = lines.sublist(1).join('\n').trim();
-        
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 20),
           child: _buildTermCard(
             icon: _getIconForTitle(title),
             title: title.toUpperCase(),
             content: body,
-            borderColor: title.toLowerCase().contains('isenção') ? Colors.red.shade100 : null,
+            borderColor: title.toLowerCase().contains('isenção')
+                ? Colors.red.shade100
+                : null,
           ),
         );
       }).toList(),
@@ -147,13 +149,15 @@ class TermsAndServicesPage extends ConsumerWidget {
     // Check if content has a quote (enclosed in double quotes)
     String? quote;
     String cleanContent = content;
-    
+
     if (content.contains('"')) {
       final startIndex = content.indexOf('"');
       final endIndex = content.lastIndexOf('"');
       if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
         quote = content.substring(startIndex, endIndex + 1);
-        cleanContent = (content.substring(0, startIndex) + content.substring(endIndex + 1)).trim();
+        cleanContent =
+            (content.substring(0, startIndex) + content.substring(endIndex + 1))
+                .trim();
       }
     }
 

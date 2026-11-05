@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:ground_guard_app/components/adaptive_dropdown.dart';
 import 'package:ground_guard_app/core/routes/app_routes.dart';
+import '../../../controllers/presentation/providers/controllers_provider.dart';
 import '../providers/devices_provider.dart';
 
 class AddDeviceQrCodePage extends ConsumerStatefulWidget {
   const AddDeviceQrCodePage({super.key});
 
   @override
-  ConsumerState<AddDeviceQrCodePage> createState() => _AddDeviceQrCodePageState();
+  ConsumerState<AddDeviceQrCodePage> createState() =>
+      _AddDeviceQrCodePageState();
 }
 
 class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
@@ -36,12 +39,29 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
 
   Future<void> _handleDeviceLink(String deviceId) async {
     if (_isProcessing) return;
+
+    final selectedController = ref.read(selectedControllerProvider);
+    if (selectedController == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Cadastre uma Controladora antes de adicionar sensores.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      Navigator.pushNamed(context, AppRoutes.addControllerBluetooth);
+      return;
+    }
+
     setState(() => _isProcessing = true);
 
     try {
-      await ref.read(devicesProvider.notifier).linkDevice(deviceId);
+      final linkedDevice = await ref
+          .read(devicesProvider.notifier)
+          .linkDevice(deviceId, controllerUuid: selectedController.uuid);
       if (mounted) {
-        _showDeviceNameModal(deviceId);
+        _showDeviceNameModal(linkedDevice.uuid);
       }
     } catch (e) {
       if (mounted) {
@@ -53,19 +73,27 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
     }
   }
 
-  Future<void> _handleDeviceNaming(String deviceId, String name) async {
+  Future<void> _handleDeviceNaming(String deviceUuid, String name) async {
     try {
-      await ref.read(devicesProvider.notifier).updateName(deviceId, name);
+      await ref.read(devicesProvider.notifier).updateName(deviceUuid, name);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dispositivo configurado com sucesso!')),
+          const SnackBar(content: Text('Sensor configurado com sucesso!')),
         );
-        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.main, (route) => false);
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.main,
+          (route) => false,
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao definir nome: ${e.toString()}')),
+          SnackBar(
+            content: Text(
+              'Erro ao definir nome: ${e.toString().replaceAll("Exception: ", "")}',
+            ),
+          ),
         );
       }
     }
@@ -85,19 +113,25 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
         ),
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom + 32,
-          top: 32, left: 24, right: 24,
+          top: 32,
+          left: 24,
+          right: 24,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Nome do Dispositivo',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF173518)),
+              'Nome do Sensor',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF173518),
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Dê um nome para identificar seu sensor (ex: Jardim Principal).',
+              'Dê um nome para identificar este ponto de monitoramento no solo (ex: Sensor Horta).',
               style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 24),
@@ -105,11 +139,17 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
               controller: _deviceNameController,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'Nome do dispositivo',
+                hintText: 'Ex: Sensor Canteiro Central',
                 filled: true,
                 fillColor: const Color(0xFFF4F4EF),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                prefixIcon: const Icon(Icons.edit_note_rounded, color: Color(0xFF173518)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: const Icon(
+                  Icons.edit_note_rounded,
+                  color: Color(0xFF173518),
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -125,9 +165,14 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
                 backgroundColor: const Color(0xFF173518),
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
-              child: const Text('Salvar e Continuar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              child: const Text(
+                'Salvar e Continuar',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
           ],
         ),
@@ -147,7 +192,9 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
         ),
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom + 32,
-          top: 32, left: 24, right: 24,
+          top: 32,
+          left: 24,
+          right: 24,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -156,8 +203,18 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Digitar código', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF173518))),
-                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded)),
+                const Text(
+                  'Digitar código do Sensor',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF173518),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -165,11 +222,17 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
               controller: _manualCodeController,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'Ex: GG-XXXX-XXXX',
+                hintText: 'Ex: GG-SNS-XXXX',
                 filled: true,
                 fillColor: const Color(0xFFF4F4EF),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                prefixIcon: const Icon(Icons.qr_code_rounded, color: Color(0xFF173518)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: const Icon(
+                  Icons.qr_code_rounded,
+                  color: Color(0xFF173518),
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -185,9 +248,14 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
                 backgroundColor: const Color(0xFF173518),
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
-              child: const Text('Confirmar Dispositivo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              child: const Text(
+                'Confirmar Sensor',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
           ],
         ),
@@ -201,6 +269,9 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
     final scanAreaSize = size.width * 0.7;
     const verticalOffset = -0.4;
 
+    final controllersAsync = ref.watch(controllersProvider);
+    final selectedController = ref.watch(selectedControllerProvider);
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -210,14 +281,22 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF173518)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Adicionar Dispositivo', style: TextStyle(color: Color(0xFF173518), fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Adicionar Sensor (Solo)',
+          style: TextStyle(
+            color: Color(0xFF173518),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           ValueListenableBuilder<MobileScannerState>(
             valueListenable: cameraController,
             builder: (context, state, child) {
               return IconButton(
                 icon: Icon(
-                  state.torchState == TorchState.on ? Icons.flashlight_off_rounded : Icons.flashlight_on_rounded,
+                  state.torchState == TorchState.on
+                      ? Icons.flashlight_off_rounded
+                      : Icons.flashlight_on_rounded,
                   color: const Color(0xFF173518),
                 ),
                 onPressed: () => cameraController.toggleTorch(),
@@ -252,25 +331,154 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
             ),
           ),
 
+          // SELETOR DA CONTROLADORA PAI NO TOPO
           Positioned(
-            bottom: 60, left: 24, right: 24,
+            top: 16,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.developer_board_rounded,
+                    color: Color(0xFF173518),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'VINCULAR À CONTROLADORA:',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Text(
+                          selectedController?.name ?? 'Nenhuma selecionada',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Color(0xFF173518),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  controllersAsync.when(
+                    data: (controllers) {
+                      if (controllers.isEmpty) {
+                        return TextButton(
+                          onPressed: () => Navigator.pushNamed(
+                            context,
+                            AppRoutes.addControllerBluetooth,
+                          ),
+                          child: const Text(
+                            'Cadastrar',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF173518),
+                            ),
+                          ),
+                        );
+                      }
+                      return AdaptiveDropdown(
+                        value: selectedController?.uuid,
+                        title: 'Selecione a controladora',
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: Color(0xFF173518),
+                        ),
+                        itemTextStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF173518),
+                        ),
+                        padding: EdgeInsets.zero,
+                        itemMaxWidth: 100,
+                        items: controllers
+                            .map(
+                              (c) => AdaptiveDropdownItem(
+                                value: c.uuid,
+                                label: c.name,
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (uuid) {
+                          if (uuid != null) {
+                            final newlySelected = controllers
+                                .where((c) => c.uuid == uuid)
+                                .firstOrNull;
+                            if (newlySelected != null) {
+                              ref
+                                      .read(selectedControllerProvider.notifier)
+                                      .state =
+                                  newlySelected;
+                            }
+                          }
+                        },
+                      );
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          Positioned(
+            bottom: 40,
+            left: 24,
+            right: 24,
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 24,
+                    horizontal: 24,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(32),
+                    color: Colors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(24),
                   ),
                   child: const Column(
                     children: [
-                      Text('Aponte a câmera para o QR Code', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF173518))),
-                      SizedBox(height: 12),
-                      Text('Enquadre o código dentro do quadrado acima.', textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.black54)),
+                      Text(
+                        'Aponte para o QR Code do Sensor',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF173518),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Enquadre o código para associar o sensor à controladora escolhida.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
                 if (_isProcessing)
                   const CircularProgressIndicator(color: Colors.white)
                 else
@@ -281,8 +489,10 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2D4029),
                       foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 60),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                      minimumSize: const Size(double.infinity, 54),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
                   ),
               ],
@@ -297,23 +507,47 @@ class _AddDeviceQrCodePageState extends ConsumerState<AddDeviceQrCodePage> {
 class ScannerOverlayPainter extends CustomPainter {
   final double scanAreaSize;
   final double verticalOffset;
-  ScannerOverlayPainter({required this.scanAreaSize, required this.verticalOffset});
+  ScannerOverlayPainter({
+    required this.scanAreaSize,
+    required this.verticalOffset,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final backgroundPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final backgroundPath = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     final cutoutRect = Rect.fromCenter(
-      center: Offset(size.width / 2, size.height / 2 + (size.height / 2 * verticalOffset)),
-      width: scanAreaSize, height: scanAreaSize,
+      center: Offset(
+        size.width / 2,
+        size.height / 2 + (size.height / 2 * verticalOffset),
+      ),
+      width: scanAreaSize,
+      height: scanAreaSize,
     );
-    final cutoutPath = Path()..addRRect(RRect.fromRectAndRadius(cutoutRect, const Radius.circular(40)));
-    final path = Path.combine(PathOperation.difference, backgroundPath, cutoutPath);
+    final cutoutPath = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(cutoutRect, const Radius.circular(40)),
+      );
+    final path = Path.combine(
+      PathOperation.difference,
+      backgroundPath,
+      cutoutPath,
+    );
     canvas.drawPath(path, Paint()..color = Colors.black.withOpacity(0.65));
 
-    final paint = Paint()..color = Colors.white.withOpacity(0.3)..style = PaintingStyle.stroke..strokeWidth = 2;
-    canvas.drawRRect(RRect.fromRectAndRadius(cutoutRect, const Radius.circular(40)), paint);
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(cutoutRect, const Radius.circular(40)),
+      paint,
+    );
 
-    final cornerPaint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 6;
+    final cornerPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6;
     const cornerLength = 45.0;
 
     // Top Left

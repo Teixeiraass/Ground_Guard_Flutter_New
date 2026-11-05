@@ -8,19 +8,20 @@ import '../util/api_config.dart';
 import '../storage/secure_storage_service.dart';
 import 'websocket_message.dart';
 
-enum WebSocketStatus { connecting, connected, disconnected }
+enum WebSocketStatus { connecting, connected, disconnected, reconnecting }
 
 class WebSocketService {
   WebSocketChannel? _channel;
   final StreamController<WebSocketMessage> _messageController =
       StreamController<WebSocketMessage>.broadcast();
-  
+
   final StreamController<WebSocketStatus> _statusController =
       StreamController<WebSocketStatus>.broadcast();
-  
+
   bool _isConnecting = false;
   bool _shouldReconnect = false;
   Timer? _reconnectTimer;
+  int _retryCount = 0;
 
   Stream<WebSocketMessage> get messages => _messageController.stream;
   Stream<WebSocketStatus> get statusStream => _statusController.stream;
@@ -33,8 +34,13 @@ class WebSocketService {
 
     _isConnecting = true;
     _shouldReconnect = true;
-    _statusController.add(WebSocketStatus.connecting);
-    
+
+    if (_retryCount == 0) {
+      _statusController.add(WebSocketStatus.connecting);
+    } else {
+      _statusController.add(WebSocketStatus.reconnecting);
+    }
+
     // Cancela timer de reconexão se existir (evita spam)
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
@@ -44,6 +50,7 @@ class WebSocketService {
       if (token == null) {
         debugPrint('WebSocket: Erro - Token não encontrado');
         _isConnecting = false;
+        _shouldReconnect = false; // Não tenta reconectar sem token
         _statusController.add(WebSocketStatus.disconnected);
         return;
       }
@@ -58,9 +65,8 @@ class WebSocketService {
       } else {
         _channel = IOWebSocketChannel.connect(
           wsUrl,
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
+          headers: {'Authorization': 'Bearer $token'},
+          connectTimeout: const Duration(seconds: 5),
         );
       }
 
@@ -82,6 +88,7 @@ class WebSocketService {
       );
 
       debugPrint('WebSocket conectado com sucesso');
+      _retryCount = 0;
       _statusController.add(WebSocketStatus.connected);
     } catch (e) {
       debugPrint('WebSocket falha na conexão: $e');
@@ -93,7 +100,12 @@ class WebSocketService {
 
   void _cleanupAndReconnect() {
     _channel = null;
-    _statusController.add(WebSocketStatus.disconnected);
+    // Se devemos reconectar, não emitimos disconnected imediatamente para evitar flicker na UI
+    if (!_shouldReconnect) {
+      _statusController.add(WebSocketStatus.disconnected);
+    } else {
+      _statusController.add(WebSocketStatus.reconnecting);
+    }
     _reconnect();
   }
 
@@ -101,6 +113,12 @@ class WebSocketService {
     try {
       final Map<String, dynamic> json = jsonDecode(data);
       final message = WebSocketMessage.fromJson(json);
+      debugPrint(
+        'WebSocket evento: type=${message.type}, '
+        'device_uid=${message.deviceUid}, '
+        'controller_uuid=${message.controllerUuid}, '
+        'is_online=${message.isOnline}',
+      );
       _messageController.add(message);
     } catch (e) {
       debugPrint('Erro ao processar mensagem WebSocket: $e');
@@ -108,11 +126,23 @@ class WebSocketService {
   }
 
   void _reconnect() {
-    if (!_shouldReconnect || _isConnecting || (_reconnectTimer?.isActive ?? false)) return;
+    if (!_shouldReconnect ||
+        _isConnecting ||
+        (_reconnectTimer?.isActive ?? false)) {
+      return;
+    }
+
+    _retryCount++;
+    // Exponential backoff: 1s, 2s, 4s, 8s, até 30s
+    final seconds = (1 << (_retryCount - 1)).clamp(1, 30);
+    final delay = Duration(seconds: seconds);
 
     _reconnectTimer?.cancel();
-    debugPrint('Reconectando em 5 segundos...');
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+    debugPrint(
+      'WebSocket: Reconectando em $seconds segundos (tentativa $_retryCount)...',
+    );
+
+    _reconnectTimer = Timer(delay, () {
       connect();
     });
   }
@@ -120,6 +150,7 @@ class WebSocketService {
   void disconnect() {
     debugPrint('WebSocket: Desconectando manual...');
     _shouldReconnect = false;
+    _retryCount = 0;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     _channel?.sink.close(status.normalClosure);

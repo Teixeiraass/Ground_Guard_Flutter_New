@@ -6,11 +6,7 @@ void main() {
     final tWeatherJson = {
       'main': {'temp': 25.5},
       'weather': [
-        {
-          'description': 'céu limpo',
-          'main': 'Clear',
-          'icon': '01d',
-        }
+        {'description': 'céu limpo', 'main': 'Clear', 'icon': '01d'},
       ],
       'name': 'São Paulo',
     };
@@ -29,7 +25,8 @@ void main() {
 
     test('should return default cityName when name is missing in JSON', () {
       // Arrange
-      final jsonWithoutName = Map<String, dynamic>.from(tWeatherJson)..remove('name');
+      final jsonWithoutName = Map<String, dynamic>.from(tWeatherJson)
+        ..remove('name');
 
       // Act
       final result = WeatherModel.fromJson(jsonWithoutName);

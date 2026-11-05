@@ -6,60 +6,70 @@ abstract class WeatherRemoteDataSource {
   Future<String> getCityByIp();
 }
 
+/// Weather goes through the Ground Guard API, which keeps the OpenWeather
+/// key server-side; the response bodies are OpenWeather's, passed through.
 class WeatherRemoteDataSourceImpl implements WeatherRemoteDataSource {
   final Dio _dio;
-  final String _apiKey = 'ff23529207a7923b8ea20b6aaa8ee091';
 
   WeatherRemoteDataSourceImpl(this._dio);
 
   @override
   Future<Map<String, dynamic>> getWeatherData(String city) async {
-    try {
-      final response = await _dio.get(
-        'https://api.openweathermap.org/data/2.5/weather',
-        queryParameters: {
-          'q': city,
-          'appid': _apiKey,
-          'units': 'metric',
-          'lang': 'pt_br',
-        },
-      );
-      return response.data as Map<String, dynamic>;
-    } catch (e) {
-      rethrow;
-    }
+    final response = await _dio.get(
+      '/weather/current',
+      queryParameters: {'city': city},
+    );
+    return Map<String, dynamic>.from(response.data as Map);
   }
 
   @override
   Future<Map<String, dynamic>> getForecastData(String city) async {
-    try {
-      final response = await _dio.get(
-        'https://api.openweathermap.org/data/2.5/forecast',
-        queryParameters: {
-          'q': city,
-          'appid': _apiKey,
-          'units': 'metric',
-          'lang': 'pt_br',
-        },
-      );
-      return response.data as Map<String, dynamic>;
-    } catch (e) {
-      rethrow;
-    }
+    final response = await _dio.get(
+      '/weather/forecast',
+      queryParameters: {'city': city},
+    );
+    return Map<String, dynamic>.from(response.data as Map);
   }
 
   @override
   Future<String> getCityByIp() async {
+    // Usando uma instância limpa de Dio para evitar interceptores que adicionam Auth headers
+    final cleanDio = Dio();
+
+    // ipapi.co às vezes falha (DNS/rate-limit) sem relação com o device do
+    // usuário. Em vez de depender de um único provedor — o que faz essa
+    // feature inteira cair por culpa de UM serviço externo — tenta um
+    // segundo provedor HTTPS antes de desistir de verdade.
+    final city = await _tryGetCity(
+          cleanDio,
+          'https://ipapi.co/json/',
+          (data) => data['city'],
+        ) ??
+        await _tryGetCity(
+          cleanDio,
+          'https://ipwho.is/',
+          (data) => data['success'] == true ? data['city'] : null,
+        );
+
+    if (city == null || city.isEmpty) {
+      throw Exception('Não foi possível identificar sua localização.');
+    }
+    return city;
+  }
+
+  Future<String?> _tryGetCity(
+    Dio dio,
+    String url,
+    Object? Function(Map<String, dynamic>) extractCity,
+  ) async {
     try {
-      // Usando uma instância limpa de Dio para evitar interceptores que adicionam Auth headers
-      final cleanDio = Dio();
-      final response = await cleanDio.get('https://ipapi.co/json/');
-      if (response.statusCode == 200) {
-        return response.data['city'] ?? 'São Paulo';
-      }
-      return 'São Paulo';
-    } catch (e) {
-      return 'São Paulo';
+      final response = await dio.get(url);
+      if (response.statusCode != 200) return null;
+      final city = extractCity(response.data as Map<String, dynamic>);
+      if (city is String && city.isNotEmpty) return city;
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 }

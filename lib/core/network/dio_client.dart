@@ -18,22 +18,30 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
-  dio.interceptors.add(AuthInterceptor(
-    dio,
-    onUnauthorized: () async {
-      await SecureStorageService.clear();
-      ref.read(forceLogoutProvider.notifier).state = true;
-    },
-  ));
+  dio.interceptors.add(
+    AuthInterceptor(
+      dio,
+      onUnauthorized: () async {
+        await SecureStorageService.clear();
+        ref.read(forceLogoutProvider.notifier).state = true;
+      },
+    ),
+  );
 
-  dio.interceptors.add(LogInterceptor(
-    requestHeader: true,
-    requestBody: true,
-    responseHeader: true,
-    responseBody: true,
-    error: true,
-    logPrint: (obj) => debugPrint('DEBUG_DIO: $obj'),
-  ));
+  // Debug builds only, and never headers or bodies: they carry the bearer
+  // token, passwords, refresh/ID tokens and chat messages.
+  if (kDebugMode) {
+    dio.interceptors.add(
+      LogInterceptor(
+        requestHeader: false,
+        requestBody: false,
+        responseHeader: false,
+        responseBody: false,
+        error: true,
+        logPrint: (obj) => debugPrint('DEBUG_DIO: $obj'),
+      ),
+    );
+  }
 
   return dio;
 });

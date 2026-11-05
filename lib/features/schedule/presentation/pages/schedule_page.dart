@@ -1,179 +1,313 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ground_guard_app/core/routes/app_routes.dart';
+import 'package:ground_guard_app/core/theme/app_colors.dart';
+import 'package:ground_guard_app/core/theme/app_spacing.dart';
+import 'package:ground_guard_app/features/schedule/data/models/schedule_model.dart';
+import 'package:ground_guard_app/features/schedule/presentation/providers/schedule_provider.dart';
+import 'package:ground_guard_app/features/schedule/presentation/pages/edit_schedule_page.dart';
 
-class SchedulePage extends StatelessWidget {
+const _monthNames = [
+  'JANEIRO',
+  'FEVEREIRO',
+  'MARÇO',
+  'ABRIL',
+  'MAIO',
+  'JUNHO',
+  'JULHO',
+  'AGOSTO',
+  'SETEMBRO',
+  'OUTUBRO',
+  'NOVEMBRO',
+  'DEZEMBRO',
+];
+const _weekDayLabels = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+
+class SchedulePage extends ConsumerWidget {
   const SchedulePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final schedulesAsync = ref.watch(scheduleProvider);
+    final schedules = schedulesAsync.valueOrNull ?? [];
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    // DateTime.weekday é 1=segunda..7=domingo; 0=domingo é o índice usado
+    // aqui (igual ao days_of_week do backend) e também o índice do label.
+    final sunday = today.subtract(Duration(days: today.weekday % 7));
+
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            // Calendar Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'OUTUBRO 2023',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        letterSpacing: 1.2,
-                        color: AppColors.primary.withOpacity(0.7),
-                      ),
-                ),
-                Text(
-                  'Mês inteiro',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(scheduleProvider.notifier).fetchSchedules(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(
+            left: 20,
+            right: 20,
+            bottom: AppSpacing.bottomNavClearance,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              // Month Selector
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${_monthNames[now.month - 1]} ${now.year}',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      letterSpacing: 1.2,
+                      color: AppColors.primary.withOpacity(0.7),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () =>
+                        Navigator.pushNamed(context, AppRoutes.fullCalendar),
+                    child: Text(
+                      'Mês inteiro',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
                       ),
-                ),
-              ],
-            ),
-            AppSpacing.vertical(15),
-            SizedBox(
-              height: 90,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                children: [
-                  _buildDateItem(context, 'DOM', '15', false),
-                  _buildDateItem(context, 'SEG', '16', true),
-                  _buildDateItem(context, 'TER', '17', false),
-                  _buildDateItem(context, 'QUA', '18', false, hasDot: true),
-                  _buildDateItem(context, 'QUI', '19', false),
-                  _buildDateItem(context, 'SEX', '20', false),
-                ],
-              ),
-            ),
-            AppSpacing.vertical(30),
-
-            // Próximas Regas Section
-            Text(
-              'PRÓXIMAS REGAS',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    letterSpacing: 1.2,
-                    color: AppColors.primary.withOpacity(0.7),
-                  ),
-            ),
-            AppSpacing.vertical(15),
-            const ScheduleCard(
-              time: '06:30 AM',
-              title: 'Jardim Frontal',
-              duration: '15 min',
-              days: 'Seg, Qua, Sex',
-              isActive: true,
-              iconData: Icons.water_drop_outlined,
-              iconColor: Color(0xFF4CAF50),
-              iconBgColor: AppColors.mintAccent,
-            ),
-            AppSpacing.vertical(15),
-            const ScheduleCard(
-              time: '07:45 AM',
-              title: 'Horta Comunitária',
-              duration: '10 min',
-              days: 'Diário',
-              isActive: false,
-              iconData: Icons.local_florist_outlined,
-              iconColor: Color(0xFFFDB64B),
-              iconBgColor: Color(0xFFFFF4E5),
-            ),
-            AppSpacing.vertical(20),
-
-            // New Schedule Button (Dotted Border)
-            CustomPaint(
-              painter: DottedBorderPainter(color: AppColors.outline.withOpacity(0.5)),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 25),
-                child: Column(
-                  children: [
-                    const Icon(Icons.add, color: AppColors.outline),
-                    AppSpacing.vertical(5),
-                    Text(
-                      'Novo Agendamento',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.outline,
-                          ),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+              AppSpacing.vertical(15),
+              // Date horizontal list: semana real corrente, com uma bolinha
+              // nos dias em que existe algum agendamento ativo.
+              SizedBox(
+                height: 90,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  children: List.generate(7, (weekday) {
+                    final date = sunday.add(Duration(days: weekday));
+                    final hasSchedule = schedules.any(
+                      (s) => s.enabled && s.daysOfWeek.contains(weekday),
+                    );
+                    return _buildDateItem(
+                      context,
+                      _weekDayLabels[weekday],
+                      date.day.toString().padLeft(2, '0'),
+                      date == today,
+                      hasDot: hasSchedule,
+                    );
+                  }),
                 ),
               ),
-            ),
-            AppSpacing.vertical(30),
+              AppSpacing.vertical(30),
 
-            // Repetition Config Section
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
+              schedulesAsync.when(
+                data: (schedules) =>
+                    _buildScheduleContent(context, ref, schedules),
+                loading: () => const Padding(
+                  padding: EdgeInsets.only(top: 40),
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   ),
-                ],
+                ),
+                error: (err, stack) => _buildErrorState(ref, err),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.refresh, size: 20, color: AppColors.primary),
-                      AppSpacing.horizontal(10),
-                      Text(
-                        'Configuração de Repetição',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                            ),
-                      ),
-                    ],
-                  ),
-                  AppSpacing.vertical(20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildDaySelector('D', true),
-                      _buildDaySelector('S', false),
-                      _buildDaySelector('T', true),
-                      _buildDaySelector('Q', false),
-                      _buildDaySelector('Q', true),
-                      _buildDaySelector('S', false),
-                      _buildDaySelector('S', false),
-                    ],
-                  ),
-                  AppSpacing.vertical(15),
-                  Text(
-                    'Irrigação programada para dias de sol intenso e solo seco.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.outline,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            AppSpacing.vertical(100),
-          ],
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: AppColors.primary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const Icon(Icons.alarm_add, color: Colors.white, size: 28),
       ),
     );
   }
 
-  Widget _buildDateItem(BuildContext context, String day, String date, bool isSelected, {bool hasDot = false}) {
+  Widget _buildErrorState(WidgetRef ref, Object error) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40),
+      child: Center(
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'Falha ao carregar agendamentos.',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString().replaceAll('Exception: ', ''),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: () =>
+                  ref.read(scheduleProvider.notifier).fetchSchedules(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar Novamente'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScheduleContent(
+    BuildContext context,
+    WidgetRef ref,
+    List<ScheduleModel> schedules,
+  ) {
+    if (schedules.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.only(top: 20),
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          children: [
+            const Icon(
+              Icons.calendar_today_rounded,
+              size: 48,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Nenhum agendamento',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Você ainda não possui horários de irrigação configurados.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EditSchedulePage()),
+              ),
+              icon: const Icon(Icons.add_rounded, color: Colors.white),
+              label: const Text(
+                'Criar Agendamento',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'PRÓXIMAS REGAS',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            letterSpacing: 1.2,
+            color: AppColors.primary.withOpacity(0.7),
+          ),
+        ),
+        AppSpacing.vertical(15),
+        ...schedules.map(
+          (s) => Padding(
+            padding: const EdgeInsets.only(bottom: 15),
+            child: ScheduleCard(
+              schedule: s,
+              onToggle: (v) =>
+                  ref.read(scheduleProvider.notifier).toggleSchedule(s),
+              onEdit: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditSchedulePage(schedule: s),
+                ),
+              ),
+              onDelete: () => _showDeleteDialog(context, ref, s),
+            ),
+          ),
+        ),
+
+        AppSpacing.vertical(20),
+        // Novo Agendamento Button
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const EditSchedulePage()),
+          ),
+          child: CustomPaint(
+            painter: DottedBorderPainter(
+              color: AppColors.outline.withOpacity(0.5),
+            ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 25),
+              child: Column(
+                children: [
+                  const Icon(Icons.add, color: AppColors.outline),
+                  AppSpacing.vertical(5),
+                  Text(
+                    'Novo Agendamento',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: AppColors.outline),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AppSpacing.vertical(100),
+      ],
+    );
+  }
+
+  void _showDeleteDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ScheduleModel schedule,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir Agendamento'),
+        content: Text(
+          'Deseja excluir o agendamento "${schedule.name ?? 'Rega'}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(scheduleProvider.notifier).deleteSchedule(schedule.uuid);
+              Navigator.pop(context);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Agendamento excluído')),
+                );
+              }
+            },
+            child: const Text(
+              'Excluir',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateItem(
+    BuildContext context,
+    String day,
+    String date,
+    bool isSelected, {
+    bool hasDot = false,
+  }) {
     return Container(
       width: 60,
       margin: const EdgeInsets.only(right: 12),
@@ -195,17 +329,19 @@ class SchedulePage extends StatelessWidget {
           Text(
             day,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: isSelected ? Colors.white.withOpacity(0.7) : AppColors.outline,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: isSelected
+                  ? Colors.white.withOpacity(0.7)
+                  : AppColors.outline,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           AppSpacing.vertical(5),
           Text(
             date,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: isSelected ? Colors.white : AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: isSelected ? Colors.white : AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           if (hasDot) ...[
             AppSpacing.vertical(2),
@@ -218,59 +354,54 @@ class SchedulePage extends StatelessWidget {
               ),
             ),
           ] else if (isSelected) ...[
-             AppSpacing.vertical(2),
-            const Icon(Icons.keyboard_arrow_down, size: 12, color: Colors.white),
-          ]
+            AppSpacing.vertical(2),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              size: 12,
+              color: Colors.white,
+            ),
+          ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildDaySelector(String label, bool isSelected) {
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : AppColors.surfaceContainer,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : AppColors.outline,
-          fontWeight: FontWeight.bold,
-          fontSize: 13,
-        ),
       ),
     );
   }
 }
 
 class ScheduleCard extends StatelessWidget {
-  final String time;
-  final String title;
-  final String duration;
-  final String days;
-  final bool isActive;
-  final IconData iconData;
-  final Color iconColor;
-  final Color iconBgColor;
+  final ScheduleModel schedule;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const ScheduleCard({
     super.key,
-    required this.time,
-    required this.title,
-    required this.duration,
-    required this.days,
-    required this.isActive,
-    required this.iconData,
-    required this.iconColor,
-    required this.iconBgColor,
+    required this.schedule,
+    required this.onToggle,
+    required this.onEdit,
+    required this.onDelete,
   });
+
+  String _formatDays(List<int> days) {
+    if (days.isEmpty) return 'Não repetir';
+    if (days.length == 7) return 'Diário';
+
+    final labels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    return days.map((d) => labels[d]).join(', ');
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isActive = schedule.enabled;
+    final iconColor = isActive
+        ? const Color(0xFF4CAF50)
+        : const Color(0xFFFDB64B);
+    final iconBgColor = isActive
+        ? AppColors.mintAccent
+        : const Color(0xFFFFF4E5);
+    final iconData = isActive
+        ? Icons.water_drop_outlined
+        : Icons.local_florist_outlined;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -302,25 +433,27 @@ class ScheduleCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      time,
+                      schedule.startTime,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.primary.withOpacity(0.6),
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: AppColors.primary.withOpacity(0.6),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
-                      title,
+                      schedule.name ?? 'Rega Programada',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
               ),
               Switch(
                 value: isActive,
-                onChanged: (value) {},
+                onChanged: onToggle,
                 activeColor: Colors.white,
                 activeTrackColor: AppColors.primary,
               ),
@@ -332,15 +465,27 @@ class ScheduleCard extends StatelessWidget {
               const Icon(Icons.access_time, size: 16, color: AppColors.outline),
               AppSpacing.horizontal(5),
               Text(
-                duration,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.outline),
+                '${(schedule.durationSeconds / 60).round()} min',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.outline),
               ),
               AppSpacing.horizontal(15),
-              const Icon(Icons.calendar_today, size: 16, color: AppColors.outline),
+              const Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: AppColors.outline,
+              ),
               AppSpacing.horizontal(5),
-              Text(
-                days,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.outline),
+              Expanded(
+                child: Text(
+                  _formatDays(schedule.daysOfWeek),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.outline),
+                ),
               ),
             ],
           ),
@@ -349,7 +494,7 @@ class ScheduleCard extends StatelessWidget {
             children: [
               Expanded(
                 child: TextButton.icon(
-                  onPressed: () {},
+                  onPressed: onEdit,
                   icon: const Icon(Icons.edit, size: 18),
                   label: const Text('Editar'),
                   style: TextButton.styleFrom(
@@ -369,7 +514,7 @@ class ScheduleCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
-                  onPressed: () {},
+                  onPressed: onDelete,
                   icon: const Icon(Icons.delete_outline, color: Colors.red),
                 ),
               ),

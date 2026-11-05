@@ -16,6 +16,7 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -29,19 +30,140 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preencha todos os campos')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Preencha todos os campos')));
       return;
     }
 
     // Avisa o sistema operacional para oferecer o salvamento da senha
     TextInput.finishAutofillContext();
 
-    await ref.read(authProvider.notifier).login(
-          email: email,
-          password: password,
-        );
+    await ref
+        .read(authProvider.notifier)
+        .login(email: email, password: password);
+  }
+
+  void _showForgotPasswordModal(BuildContext context) {
+    final forgotEmailController = TextEditingController();
+    final sending = ValueNotifier<bool>(false);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+          top: 32,
+          left: 24,
+          right: 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Recuperar Senha',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF173518),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Insira seu email cadastrado. Se existir uma conta com esse email, enviaremos um link para redefinir a senha.',
+              style: TextStyle(color: Colors.grey, fontSize: 15),
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: forgotEmailController,
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'nome@exemplo.com',
+                filled: true,
+                fillColor: const Color(0xFFF4F4EF),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: const Icon(
+                  Icons.mail_outline_rounded,
+                  color: Color(0xFF173518),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ValueListenableBuilder<bool>(
+              valueListenable: sending,
+              builder: (context, isSending, _) {
+                return ElevatedButton(
+                  onPressed: isSending
+                      ? null
+                      : () async {
+                          final email = forgotEmailController.text.trim();
+                          if (email.isEmpty) return;
+
+                          sending.value = true;
+                          try {
+                            await ref
+                                .read(authProvider.notifier)
+                                .requestPasswordReset(email);
+                          } catch (_) {
+                            // Mesmo em erro de rede, mostramos a mesma mensagem
+                            // genérica: não revelamos se o email existe ou não.
+                          } finally {
+                            sending.value = false;
+                          }
+
+                          if (!context.mounted) return;
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Se esse email estiver cadastrado, você vai receber um link para redefinir a senha.',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF173518),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: isSending
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Enviar Email',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -52,10 +174,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       if (next.status == AuthStatus.authenticated) {
         Navigator.pushReplacementNamed(context, AppRoutes.main);
       } else if (next.status == AuthStatus.authenticatedNoDevices) {
-        Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
-      } else if (next.errorMessage != null && next.status == AuthStatus.unauthenticated) {
+        Navigator.pushReplacementNamed(
+          context,
+          AppRoutes.addControllerBluetooth,
+        );
+      } else if (next.errorMessage != null &&
+          (next.status == AuthStatus.unauthenticated ||
+              next.status == AuthStatus.error)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.errorMessage!)),
+          SnackBar(
+            content: Text(next.errorMessage!),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     });
@@ -72,10 +202,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   const SizedBox(height: 42),
                   Column(
                     children: [
-                      Image.asset(
-                        'assets/images/logo.png',
-                        width: 120,
-                      ),
+                      Image.asset('assets/images/logo.png', width: 120),
                       const SizedBox(height: 28),
                       Text(
                         'Cuidando do seu jardim com\ninteligência e carinho.',
@@ -112,13 +239,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         Text(
                           'Email',
                           style: theme.textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.w700, color: const Color(0xFF424840)),
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF424840),
+                          ),
                         ),
                         const SizedBox(height: 10),
                         TextField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          autofillHints: const [AutofillHints.email, AutofillHints.username],
+                          autofillHints: const [
+                            AutofillHints.email,
+                            AutofillHints.username,
+                          ],
                           decoration: InputDecoration(
                             hintText: 'nome@exemplo.com',
                             prefixIcon: const Icon(
@@ -143,10 +275,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             Text(
                               'Senha',
                               style: theme.textTheme.labelLarge?.copyWith(
-                                  fontWeight: FontWeight.w700, color: const Color(0xFF424840)),
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF424840),
+                              ),
                             ),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: () =>
+                                  _showForgotPasswordModal(context),
                               style: TextButton.styleFrom(
                                 padding: EdgeInsets.zero,
                                 minimumSize: Size.zero,
@@ -165,7 +300,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         const SizedBox(height: 10),
                         TextField(
                           controller: _passwordController,
-                          obscureText: true,
+                          obscureText: _obscurePassword,
                           autofillHints: const [AutofillHints.password],
                           onSubmitted: (_) => _onLogin(),
                           decoration: InputDecoration(
@@ -174,9 +309,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               Icons.lock_outline_rounded,
                               color: AppColors.outline,
                             ),
-                            suffixIcon: const Icon(
-                              Icons.visibility_outlined,
-                              color: AppColors.outline,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                                color: AppColors.outline,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
                             ),
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.8),
@@ -197,7 +341,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             builder: (context, ref, child) {
                               final authState = ref.watch(authProvider);
                               return ElevatedButton(
-                                onPressed: authState.status == AuthStatus.loading ? null : _onLogin,
+                                onPressed:
+                                    authState.status == AuthStatus.loading
+                                    ? null
+                                    : _onLogin,
                                 style: ElevatedButton.styleFrom(
                                   elevation: 0,
                                   backgroundColor: AppColors.primary,
@@ -216,7 +363,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                         ),
                                       )
                                     : const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Text(
                                             'Entrar',
@@ -236,12 +384,28 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         const SizedBox(height: 16),
                         const Row(
                           children: [
-                            Expanded(child: Divider(color: Colors.grey, thickness: 0.5)),
+                            Expanded(
+                              child: Divider(
+                                color: Colors.grey,
+                                thickness: 0.5,
+                              ),
+                            ),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: Text('OU', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                              child: Text(
+                                'OU',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
-                            Expanded(child: Divider(color: Colors.grey, thickness: 0.5)),
+                            Expanded(
+                              child: Divider(
+                                color: Colors.grey,
+                                thickness: 0.5,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -250,9 +414,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           height: 54,
                           child: OutlinedButton(
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Login com Google em breve')),
-                              );
+                              ref.read(authProvider.notifier).loginWithGoogle();
                             },
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Color(0xFFEEEEE9)),
@@ -262,22 +424,31 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.g_mobiledata_rounded,
-                                    size: 32, color: Colors.blue.shade700),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Entrar com Google',
-                                  style: TextStyle(
-                                    color: Color(0xFF424840),
-                                    fontWeight: FontWeight.w700,
+                                Image.asset(
+                                  'assets/icons/icon_google.png',
+                                  width: 24,
+                                  height: 24,
+                                  fit: BoxFit.contain,
+                                ),
+                                const SizedBox(width: 12),
+                                const Flexible(
+                                  child: Text(
+                                    'Entrar com Google',
+                                    style: TextStyle(
+                                      color: Color(0xFF424840),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        if (Theme.of(context).platform == TargetPlatform.iOS) ...[
+                        if (Theme.of(context).platform ==
+                            TargetPlatform.iOS) ...[
                           const SizedBox(height: 12),
                           SizedBox(
                             width: double.infinity,
@@ -285,10 +456,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Login com Apple em breve')),
+                                  const SnackBar(
+                                    content: Text('Login com Apple em breve'),
+                                  ),
                                 );
                               },
-                              icon: const Icon(Icons.apple, color: Colors.white, size: 24),
+                              icon: const Icon(
+                                Icons.apple,
+                                color: Colors.white,
+                                size: 24,
+                              ),
                               label: const Text(
                                 'Entrar com Apple',
                                 style: TextStyle(
@@ -339,9 +516,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           ),
                           child: const Text(
                             'Criar conta',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.w700),
                           ),
                         ),
                       ),

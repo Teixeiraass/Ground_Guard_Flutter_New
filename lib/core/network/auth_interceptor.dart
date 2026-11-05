@@ -23,29 +23,36 @@ class AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     // 1. Detecta erro de falta de acesso (401 Unauthorized ou 403 Forbidden)
-    final isUnauthorized = err.response?.statusCode == 401 || err.response?.statusCode == 403;
+    final isUnauthorized =
+        err.response?.statusCode == 401 || err.response?.statusCode == 403;
     final isRefreshRoute = err.requestOptions.path.contains('/tokens/refresh');
 
     if (isUnauthorized) {
       // Se o erro ocorreu na própria rota de refresh, a sessão expirou de vez
       if (isRefreshRoute) {
-        debugPrint('DEBUG_AUTH: Falha definitiva no Refresh Token (401/403). Forçando logout...');
+        debugPrint(
+          'DEBUG_AUTH: Falha definitiva no Refresh Token (401/403). Forçando logout...',
+        );
         await _forceLogout();
         return handler.next(err);
       }
 
       // Se não for na rota de refresh, tenta renovar o token
-      debugPrint('DEBUG_AUTH: Token expirado em ${err.requestOptions.path}. Tentando renovar...');
-      
+      debugPrint(
+        'DEBUG_AUTH: Token expirado em ${err.requestOptions.path}. Tentando renovar...',
+      );
+
       final refreshToken = await SecureStorageService.getRefreshToken();
-      
+
       if (refreshToken != null) {
         try {
           // Instância limpa para o refresh
-          final refreshDio = Dio(BaseOptions(
-            baseUrl: _dio.options.baseUrl,
-            contentType: 'application/json',
-          ));
+          final refreshDio = Dio(
+            BaseOptions(
+              baseUrl: _dio.options.baseUrl,
+              contentType: 'application/json',
+            ),
+          );
 
           final response = await refreshDio.post(
             '/tokens/refresh',
@@ -60,7 +67,7 @@ class AuthInterceptor extends Interceptor {
           // Repete a requisição original
           final requestOptions = err.requestOptions;
           requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
-          
+
           final clonedRequest = await _dio.request(
             requestOptions.path,
             options: Options(
@@ -72,17 +79,18 @@ class AuthInterceptor extends Interceptor {
           );
 
           return handler.resolve(clonedRequest);
-          
         } catch (e) {
           debugPrint('DEBUG_AUTH: Erro durante tentativa de refresh: $e');
           await _forceLogout();
         }
       } else {
-        debugPrint('DEBUG_AUTH: Refresh Token não encontrado. Forçando logout...');
+        debugPrint(
+          'DEBUG_AUTH: Refresh Token não encontrado. Forçando logout...',
+        );
         await _forceLogout();
       }
     }
-    
+
     return handler.next(err);
   }
 

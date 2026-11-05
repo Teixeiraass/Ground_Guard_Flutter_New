@@ -24,7 +24,8 @@ class LoginResponse {
       refreshToken: json['refresh_token'] ?? '',
       // Supporting both spellings for the access token expiry
       accessTokenExpiresAt: DateTime.parse(
-          json['acces_token_expires_at'] ?? json['access_token_expires_at']),
+        json['acces_token_expires_at'] ?? json['access_token_expires_at'],
+      ),
       refreshTokenExpiresAt: DateTime.parse(json['refresh_token_expires_at']),
       user: UserModel.fromJson(json['user']),
     );

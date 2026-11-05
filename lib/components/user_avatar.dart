@@ -29,13 +29,13 @@ class UserAvatar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     var imageUrl = ApiConfig.getFullImageUrl(user?.userImage);
-    
+
     // Pegamos a versão estável da imagem do provider
     final imageVersion = ref.watch(userImageVersionProvider);
-    
+
     if (imageUrl.isNotEmpty) {
-      imageUrl = imageUrl.contains('?') 
-          ? '$imageUrl&v=$imageVersion' 
+      imageUrl = imageUrl.contains('?')
+          ? '$imageUrl&v=$imageVersion'
           : '$imageUrl?v=$imageVersion';
     }
 
@@ -44,7 +44,9 @@ class UserAvatar extends ConsumerWidget {
       avatar = ClipOval(
         child: Image.network(
           imageUrl,
-          key: ValueKey(imageUrl), // A URL só muda se a versão no provider mudar
+          key: ValueKey(
+            imageUrl,
+          ), // A URL só muda se a versão no provider mudar
           width: radius * 2,
           height: radius * 2,
           fit: BoxFit.cover,

@@ -15,28 +15,32 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final List<OnboardingStep> _steps = [
     OnboardingStep(
       title: 'Vamos aos primeiros passos',
-      description: 'Prepare o seu ambiente para a melhor experiência de jardinagem inteligente. Certifique-se de que o Bluetooth e o Wi-Fi do seu celular estão ligados para começar a configuração do seu Ground Guard.',
+      description:
+          'Prepare o seu ambiente para a melhor experiência de jardinagem inteligente. Certifique-se de que o Bluetooth e o Wi-Fi do seu celular estão ligados para começar a configuração do seu Ground Guard.',
       image: 'assets/images/onboarding_1.png',
       topBadgeIcon: '👋 Oi!',
       topBadgeColor: const Color(0xFFFDB64B),
     ),
     OnboardingStep(
       title: 'Conecte seu Dispositivo',
-      description: 'Aponte a câmera para o QR Code localizado na lateral do seu dispositivo Ground Guard para identificá-lo automaticamente.',
+      description:
+          'Aponte a câmera para o QR Code localizado na lateral do seu dispositivo Ground Guard para identificá-lo automaticamente.',
       image: 'assets/images/onboarding_2.png',
       topBadgeIcon: Icons.qr_code_scanner_rounded,
       bottomBadgeIcon: Icons.eco,
     ),
     OnboardingStep(
       title: 'Configurar Rede',
-      description: 'Agora, o Ground Guard precisa se conectar à sua rede Wi-Fi. No próximo passo, você deve selecionar sua rede doméstica e inserir a senha para que ele possa sincronizar com a nuvem e cuidar do seu jardim.',
+      description:
+          'Agora, o Ground Guard precisa se conectar à sua rede Wi-Fi. No próximo passo, você deve selecionar sua rede doméstica e inserir a senha para que ele possa sincronizar com a nuvem e cuidar do seu jardim.',
       image: 'assets/images/onboarding_3.png',
       topBadgeIcon: Icons.wifi,
       footer: 'Segurança WPA3 habilitada por padrão.',
     ),
     OnboardingStep(
       title: 'Tudo Pronto!',
-      description: 'Seu Ground Guard está configurado e pronto para cuidar das suas plantas. Agora é só aproveitar o seu jardim sempre verde e saudável.',
+      description:
+          'Seu Ground Guard está configurado e pronto para cuidar das suas plantas. Agora é só aproveitar o seu jardim sempre verde e saudável.',
       image: 'assets/images/onboarding_4.png',
       topBadgeIcon: Icons.eco,
       bottomBadgeIcon: Icons.check_circle_outline,
@@ -51,7 +55,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         curve: Curves.easeInOut,
       );
     } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.qrCodeDevice);
+      Navigator.pushReplacementNamed(context, AppRoutes.addControllerBluetooth);
     }
   }
 
@@ -63,17 +67,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        leading: _currentPage > 0 
-          ? IconButton(
-              icon: const Icon(Icons.arrow_back, color: Color(0xFF1D3520)),
-              onPressed: () {
-                _pageController.previousPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
-            )
-          : null,
+        leading: _currentPage > 0
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF1D3520)),
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+              )
+            : null,
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -97,7 +101,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
           const SizedBox(height: 8),
           Text(
             'Etapa ${_currentPage + 1} de 4',
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           Expanded(
             child: PageView.builder(
@@ -130,7 +138,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         } else if (index == _currentPage) {
           barColor = const Color(0xFF1D3520); // Dark Green for current
         }
-        
+
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: 40,
@@ -161,7 +169,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       color: Colors.black.withOpacity(0.05),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
-                    )
+                    ),
                   ],
                 ),
                 child: ClipRRect(
@@ -174,7 +182,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     errorBuilder: (context, error, stackTrace) => Container(
                       height: 320,
                       color: Colors.white,
-                      child: const Icon(Icons.image_outlined, size: 100, color: Colors.grey),
+                      child: const Icon(
+                        Icons.image_outlined,
+                        size: 100,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ),
@@ -189,7 +201,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 Positioned(
                   bottom: step.isLast ? 40 : 20,
                   left: -15,
-                  child: _buildBadge(step.bottomBadgeIcon!, step.bottomBadgeColor),
+                  child: _buildBadge(
+                    step.bottomBadgeIcon!,
+                    step.bottomBadgeColor,
+                  ),
                 ),
             ],
           ),
@@ -229,13 +244,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
               style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
             ),
           ],
-           if (step.isLast) ...[
+          if (step.isLast) ...[
             const SizedBox(height: 24),
             TextButton(
-              onPressed: () {},
+              onPressed: () => _pageController.animateToPage(
+                0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+              ),
               child: Text(
                 'Deseja revisar as configurações?',
-                style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -255,12 +277,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
             color: Colors.black.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
-      child: icon is String 
-        ? Text(icon, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1D3520)))
-        : Icon(icon as IconData, color: const Color(0xFF1D3520), size: 24),
+      child: icon is String
+          ? Text(
+              icon,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1D3520),
+              ),
+            )
+          : Icon(icon as IconData, color: const Color(0xFF1D3520), size: 24),
     );
   }
 

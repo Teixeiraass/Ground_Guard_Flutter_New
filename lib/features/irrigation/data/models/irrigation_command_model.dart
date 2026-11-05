@@ -25,11 +25,16 @@ class IrrigationCommandModel {
 
   static IrrigationStatus _mapStatus(String? status) {
     switch (status?.toUpperCase()) {
-      case 'PENDING': return IrrigationStatus.pending;
-      case 'SUCCESS': return IrrigationStatus.success;
-      case 'FAILED': return IrrigationStatus.failed;
-      case 'TIMEOUT': return IrrigationStatus.timeout;
-      default: return IrrigationStatus.idle;
+      case 'PENDING':
+        return IrrigationStatus.pending;
+      case 'SUCCESS':
+        return IrrigationStatus.success;
+      case 'FAILED':
+        return IrrigationStatus.failed;
+      case 'TIMEOUT':
+        return IrrigationStatus.timeout;
+      default:
+        return IrrigationStatus.idle;
     }
   }
 }

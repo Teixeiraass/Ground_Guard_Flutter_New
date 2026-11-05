@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../components/user_avatar.dart';
+import '../../../alerts/presentation/providers/notifications_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 import 'package:ground_guard_app/core/routes/app_routes.dart';
@@ -11,6 +12,7 @@ class MainHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
+    final unreadCount = ref.watch(unreadNotificationsCountProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -41,14 +43,19 @@ class MainHeader extends ConsumerWidget {
           Row(
             children: [
               IconButton(
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
-                icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1D3520)),
+                onPressed: () =>
+                    Navigator.pushNamed(context, AppRoutes.notifications),
+                icon: Badge(
+                  isLabelVisible: unreadCount > 0,
+                  label: Text('$unreadCount'),
+                  child: const Icon(
+                    Icons.notifications_none_rounded,
+                    color: Color(0xFF1D3520),
+                  ),
+                ),
               ),
               const SizedBox(width: 4),
-              UserAvatar(
-                user: user,
-                radius: 18,
-              ),
+              UserAvatar(user: user, radius: 18),
             ],
           ),
         ],

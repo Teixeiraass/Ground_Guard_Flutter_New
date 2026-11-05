@@ -34,7 +34,11 @@ class NewDeviceQrcode extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.qr_code_scanner_rounded, size: 100, color: Color(0xFF274029)),
+                const Icon(
+                  Icons.qr_code_scanner_rounded,
+                  size: 100,
+                  color: Color(0xFF274029),
+                ),
                 const SizedBox(height: 24),
                 const Text(
                   'Nenhum dispositivo encontrado!',
@@ -54,10 +58,18 @@ class NewDeviceQrcode extends ConsumerWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF274029),
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
-                  child: const Text('Escanear QR Code', style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    'Escanear QR Code',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
